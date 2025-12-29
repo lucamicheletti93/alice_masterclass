@@ -4,20 +4,20 @@
 void rewriteTree() {
 
     TFile *fOut = new TFile("data.root", "RECREATE");
-    double massa, pt, eta, ptMu1, ptMu2, etaMu1, etaMu2;
-    int carica, caricaMu1, caricaMu2, typeMu1, typeMu2;
+    double mass, pt, eta, ptMu1, ptMu2, etaMu1, etaMu2;
+    int charge, chargeMu1, chargeMu2, typeMu1, typeMu2;
     TTree *treeOut = new TTree("data", "data");
 
-    treeOut -> Branch("massa", &massa);
+    treeOut -> Branch("mass", &mass);
     treeOut -> Branch("pt", &pt);
     treeOut -> Branch("eta", &eta);
-    treeOut -> Branch("carica", &carica);
+    treeOut -> Branch("charge", &charge);
     treeOut -> Branch("ptMu1", &ptMu1);
     treeOut -> Branch("ptMu2", &ptMu2);
     treeOut -> Branch("etaMu1", &etaMu1);
     treeOut -> Branch("etaMu2", &etaMu2);
-    treeOut -> Branch("caricaMu1", &caricaMu1);
-    treeOut -> Branch("caricaMu2", &caricaMu2);
+    treeOut -> Branch("chargeMu1", &chargeMu1);
+    treeOut -> Branch("chargeMu2", &chargeMu2);
     treeOut -> Branch("typeMu1", &typeMu1);
     treeOut -> Branch("typeMu2", &typeMu2);
 
@@ -37,24 +37,24 @@ void rewriteTree() {
     TTreeReaderValue<Int_t> fTrackType2(myReader, "fTrackType2");
 
     while (myReader.Next()) {
-        massa = *fMass;
+        mass = *fMass;
         pt = *fPt;
         eta = *fEta;
         ptMu1 = *fPt1;
         ptMu2 = *fPt2;
         etaMu1 = -(*fEta1);
         etaMu2 = -(*fEta2);
-        caricaMu1 = *fSign1;
-        caricaMu2 = *fSign2;
+        chargeMu1 = *fSign1;
+        chargeMu2 = *fSign2;
         typeMu1 = *fTrackType1;
         typeMu2 = *fTrackType2;
 
-        if (caricaMu1 != caricaMu2) {
-            carica = 0;
-        } else if (caricaMu1 > 0 && caricaMu2 > 0) {
-            carica = 2;
+        if (chargeMu1 != chargeMu2) {
+            charge = 0;
+        } else if (chargeMu1 > 0 && chargeMu2 > 0) {
+            charge = 2;
         } else {
-            carica = -2;
+            charge = -2;
         }
         treeOut -> Fill();
     }

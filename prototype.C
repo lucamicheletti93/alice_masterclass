@@ -12,41 +12,48 @@
 class MyGUI : public TGMainFrame {
 
 private:
+    TGTextEntry *entryHistToFit;
     TGTextEntry *entryPtDimuMin, *entryPtDimuMax, *entryChargeDimu;
     TGTextEntry *entryPtMuMin, *entryPtMuMax, *entryEtaMuMin, *entryEtaMuMax, *entryTrackType;
     TGTextEntry *entryHistName;
-    TGTextEntry *fitMin, *fitMax;
+    TGTextEntry *entryFitMeanMin, *entryFitMeanMax, *entryFitWidthMin, *entryFitWidthMax, *entryFitMin, *entryFitMax;
     TGLabel *labelHistStatus;
-    TRootEmbeddedCanvas *canvasTop, *canvasBottom;
+    TRootEmbeddedCanvas *canvasTopLeft, *canvasTopRight, *canvasBottomLeft, *canvasBottomRight;
     TGComboBox  *comboVar, *comboHists;
 
     TGCheckButton *cbChargePlus, *cbChargeMinus, *cbChargeZero;
 
     TGTextButton *bAddHist, *bDraw, *bClear;
+    TGTextButton *bFitPlot, *bFit, *bResults;
 
     ROOT::RDF::RNode df;
     ROOT::RDF::RResultPtr<TH1D> histVar;
     ROOT::RDF::RResultPtr<TH1D> histDimuMassPM, histDimuMassPP, histDimuMassMM;
 
+    TLatex latexTitleCanvas;
+
+    TH1D *histResults;
+
     // Selected histograms
     std::map<std::string, ROOT::RDF::RResultPtr<TH1D>> histograms;
     std::vector<string> histogramNames;
 
-    // Checkbox associati
-    std::map<std::string, TGCheckButton*> histChecks;
+    double nJpsi, errJpsi, nPsi2s, errPsi2s, nBkgRangeJpsi, errBkgRangeJpsi, nBkgRangePsi2s, errBkgRangePsi2s, signfJpsi, signfPsi2s;
+
+
 
 public:
     MyGUI(const TGWindow *p, ROOT::RDF::RNode rdf) : TGMainFrame(p, 900, 500), df(rdf) {
 
         // ===========================
-        // FRAME PRINCIPALE
+        // MAIN FRAME
         // ===========================
         TGHorizontalFrame *main = new TGHorizontalFrame(this); 
         
         AddFrame(main, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
 
         // =====================================================
-        //  FRAME SINISTRO (SHOW + FIT)
+        //  LEFT FRAME
         // =====================================================
         TGVerticalFrame *left = new TGVerticalFrame(main, 300);
         main->AddFrame(left, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5,5,5,5));
@@ -55,72 +62,64 @@ public:
         TGGroupFrame *showFrame = new TGGroupFrame(left, "Data selection");
         left -> AddFrame(showFrame, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
 
-        TGCompositeFrame *table = new TGCompositeFrame(showFrame);
-        table -> SetLayoutManager(new TGTableLayout(table, 4, 4));
-        showFrame -> AddFrame(table, new TGLayoutHints(kLHintsExpandX));
+        TGCompositeFrame *tableShow = new TGCompositeFrame(showFrame);
+        tableShow -> SetLayoutManager(new TGTableLayout(tableShow, 4, 4));
+        showFrame -> AddFrame(tableShow, new TGLayoutHints(kLHintsExpandX));
         
-        table -> AddFrame(new TGLabel(table, ""), new TGTableLayoutHints(0, 1, 0, 1, kLHintsCenterX));
-        table -> AddFrame(new TGLabel(table, "Min"), new TGTableLayoutHints(1, 2, 0, 1, kLHintsCenterX));
-        table -> AddFrame(new TGLabel(table, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
+        tableShow -> AddFrame(new TGLabel(tableShow, ""), new TGTableLayoutHints(0, 1, 0, 1, kLHintsCenterX));
+        tableShow -> AddFrame(new TGLabel(tableShow, "Min"), new TGTableLayoutHints(1, 2, 0, 1, kLHintsCenterX));
+        tableShow -> AddFrame(new TGLabel(tableShow, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
 
         // Muon pT
-        table -> AddFrame(new TGLabel(table, "pT muone"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "pT muone"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
-        entryPtMuMin = new TGTextEntry(table, new TGTextBuffer(10));
+        entryPtMuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtMuMin -> SetText("0");
         entryPtMuMin -> Resize(80,22);
         entryPtMuMin -> SetAlignment(kTextCenterX);
-        table -> AddFrame(entryPtMuMin, new TGTableLayoutHints(1,2,1,2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableShow -> AddFrame(entryPtMuMin, new TGTableLayoutHints(1,2,1,2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
-        entryPtMuMax = new TGTextEntry(table, new TGTextBuffer(10));
+        entryPtMuMax = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtMuMax -> SetText("100");
         entryPtMuMax -> Resize(80,22);
         entryPtMuMax -> SetAlignment(kTextCenterX);
-        table -> AddFrame(entryPtMuMax, new TGTableLayoutHints(2,3,1,2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableShow -> AddFrame(entryPtMuMax, new TGTableLayoutHints(2,3,1,2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Muon eta
-        table -> AddFrame(new TGLabel(table, "eta muone"), new TGTableLayoutHints(0,1,2,3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "eta muone"), new TGTableLayoutHints(0,1,2,3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
-        entryEtaMuMin = new TGTextEntry(table, new TGTextBuffer(10));
+        entryEtaMuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryEtaMuMin -> SetText("2.5");
         entryEtaMuMin -> Resize(80,22);
         entryEtaMuMin -> SetAlignment(kTextCenterX);
-        table -> AddFrame(entryEtaMuMin, new TGTableLayoutHints(1,2,2,3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableShow -> AddFrame(entryEtaMuMin, new TGTableLayoutHints(1,2,2,3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
-        entryEtaMuMax = new TGTextEntry(table, new TGTextBuffer(10));
+        entryEtaMuMax = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryEtaMuMax -> SetText("4");
         entryEtaMuMax -> Resize(80,22);
         entryEtaMuMax -> SetAlignment(kTextCenterX);
-        table -> AddFrame(entryEtaMuMax, new TGTableLayoutHints(2,3,2,3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableShow -> AddFrame(entryEtaMuMax, new TGTableLayoutHints(2,3,2,3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Dimuon pt
-        table -> AddFrame(new TGLabel(table, "pT dimuone"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "pT dimuone"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
-        entryPtDimuMin = new TGTextEntry(table, new TGTextBuffer(10));
+        entryPtDimuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtDimuMin -> SetText("0");
         entryPtDimuMin -> Resize(80,22);
         entryPtDimuMin -> SetAlignment(kTextCenterX);
-        table -> AddFrame(entryPtDimuMin, new TGTableLayoutHints(1,2,3,4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableShow -> AddFrame(entryPtDimuMin, new TGTableLayoutHints(1,2,3,4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
-        entryPtDimuMax = new TGTextEntry(table, new TGTextBuffer(10));
+        entryPtDimuMax = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtDimuMax -> SetText("100");
         entryPtDimuMax -> Resize(80,22);
         entryPtDimuMax -> SetAlignment(kTextCenterX);
-        table -> AddFrame(entryPtDimuMax, new TGTableLayoutHints(2,3,3,4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableShow -> AddFrame(entryPtDimuMax, new TGTableLayoutHints(2,3,3,4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
-        table -> MapSubwindows();
-        table -> Resize();
+        tableShow -> MapSubwindows();
+        tableShow -> Resize();
 
-        
         AddInput(showFrame, "Carica dimuone:", entryChargeDimu, "0");
         AddInput(showFrame, "Type muone:", entryTrackType, "3");
-
-
-        //AddInput(showFrame, "Pt min dimuone:", entryPtDimuMin, "0");
-        //AddInput(showFrame, "Pt max dimuone:", entryPtDimuMax, "100");
-        //AddInput(showFrame, "Eta  min muone:", entryEtaMuMin, "2.5");
-        //AddInput(showFrame, "Eta  max muone:", entryEtaMuMax, "4");
-
 
         TGHorizontalFrame *fVar = new TGHorizontalFrame(showFrame);
         fVar->AddFrame(new TGLabel(fVar, "Variabile:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
@@ -137,7 +136,7 @@ public:
 
 
         // ---------- ANALYSIS (MID) ----------
-        TGGroupFrame *analysisFrame = new TGGroupFrame(left, "Analysis");
+        TGGroupFrame *analysisFrame = new TGGroupFrame(left, "Data analysis");
         left->AddFrame(analysisFrame, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
 
         TGHorizontalFrame *frameAddHist = new TGHorizontalFrame(analysisFrame);
@@ -166,44 +165,138 @@ public:
         analysisFrame->AddFrame(bClear, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
 
         // ---------- FIT (BOTTOM) ----------
-        TGGroupFrame *fitFrame = new TGGroupFrame(left, "Fit");
+        TGGroupFrame *fitFrame = new TGGroupFrame(left, "Fit data");
         left->AddFrame(fitFrame, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
 
-        AddInput(fitFrame, "Fit Min:", fitMin, "-2");
-        AddInput(fitFrame, "Fit Max:", fitMax, "2");
+        AddInput(fitFrame, "Histogram to fit", entryHistToFit, "");
 
-        TGTextButton *bFit = new TGTextButton(fitFrame, "Fit data");
+        bFitPlot = new TGTextButton(fitFrame, "Plot histogram to fit");
+        fitFrame->AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        bFitPlot -> SetEnabled(false);
+
+        TGCompositeFrame *tableFit = new TGCompositeFrame(fitFrame);
+        tableFit -> SetLayoutManager(new TGTableLayout(tableFit, 4, 4));
+        fitFrame -> AddFrame(tableFit, new TGLayoutHints(kLHintsExpandX));
+        
+        tableFit -> AddFrame(new TGLabel(tableFit, ""), new TGTableLayoutHints(0, 1, 0, 1, kLHintsCenterX));
+        tableFit -> AddFrame(new TGLabel(tableFit, "Min"), new TGTableLayoutHints(1, 2, 0, 1, kLHintsCenterX));
+        tableFit -> AddFrame(new TGLabel(tableFit, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
+
+        // Min fit range
+        tableFit -> AddFrame(new TGLabel(tableFit, "Range"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+
+        entryFitMin = new TGTextEntry(tableFit, new TGTextBuffer(10));
+        entryFitMin -> SetText("2");
+        entryFitMin -> Resize(80,22);
+        entryFitMin -> SetAlignment(kTextCenterX);
+        tableFit -> AddFrame(entryFitMin, new TGTableLayoutHints(1,2,1,2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+
+        entryFitMax = new TGTextEntry(tableFit, new TGTextBuffer(10));
+        entryFitMax -> SetText("5");
+        entryFitMax -> Resize(80,22);
+        entryFitMax -> SetAlignment(kTextCenterX);
+        tableFit -> AddFrame(entryFitMax, new TGTableLayoutHints(2,3,1,2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+
+        // Mean fit
+        tableFit -> AddFrame(new TGLabel(tableFit, "Signal mean"), new TGTableLayoutHints(0,1,2,3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+
+        entryFitMeanMin = new TGTextEntry(tableFit, new TGTextBuffer(10));
+        entryFitMeanMin -> SetText("2.95");
+        entryFitMeanMin -> Resize(80,22);
+        entryFitMeanMin -> SetAlignment(kTextCenterX);
+        tableFit -> AddFrame(entryFitMeanMin, new TGTableLayoutHints(1,2,2,3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+
+        entryFitMeanMax = new TGTextEntry(tableFit, new TGTextBuffer(10));
+        entryFitMeanMax -> SetText("3.3");
+        entryFitMeanMax -> Resize(80,22);
+        entryFitMeanMax -> SetAlignment(kTextCenterX);
+        tableFit -> AddFrame(entryFitMeanMax, new TGTableLayoutHints(2,3,2,3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+
+        // Width fit
+        tableFit -> AddFrame(new TGLabel(tableFit, "Signal width"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+
+        entryFitWidthMin = new TGTextEntry(tableFit, new TGTextBuffer(10));
+        entryFitWidthMin -> SetText("0");
+        entryFitWidthMin -> Resize(80,22);
+        entryFitWidthMin -> SetAlignment(kTextCenterX);
+        tableFit -> AddFrame(entryFitWidthMin, new TGTableLayoutHints(1,2,3,4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+
+        entryFitWidthMax = new TGTextEntry(tableFit, new TGTextBuffer(10));
+        entryFitWidthMax -> SetText("0.1");
+        entryFitWidthMax -> Resize(80,22);
+        entryFitWidthMax -> SetAlignment(kTextCenterX);
+        tableFit -> AddFrame(entryFitWidthMax, new TGTableLayoutHints(2,3,3,4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+
+        tableFit -> MapSubwindows();
+        tableFit -> Resize();
+
+
+        bFit = new TGTextButton(fitFrame, "Fit data");
         fitFrame->AddFrame(bFit, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        bFit -> SetEnabled(false);
 
-        /*TGHorizontalFrame *fCombo = new TGHorizontalFrame(fitFrame);
-        fCombo->AddFrame(new TGLabel(fCombo, "Istogrammi:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
-
-        comboHists = new TGComboBox(fCombo);
-        comboHists->Resize(180, 22);
-
-        fCombo->AddFrame(comboHists, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
-        fitFrame->AddFrame(fCombo);
-
-        TGVerticalFrame *checkFrame = new TGVerticalFrame(fitFrame);
-        fitFrame->AddFrame(checkFrame, TGLayoutHints(kLHintsExpandX, 10,5,5,5));*/
+        bResults = new TGTextButton(fitFrame, "Add to results");
+        fitFrame->AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        bResults -> SetEnabled(false);
 
         // =====================================================
-        //  CANVAS (DESTRA)
+        // RIGHT FRAME
         // =====================================================
+        latexTitleCanvas.SetNDC();
+        latexTitleCanvas.SetTextSize(0.05);
+        latexTitleCanvas.SetTextFont(42);
+
         TGVerticalFrame *right = new TGVerticalFrame(main, 600);
-        main->AddFrame(right, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5,5,5,5));
+        main -> AddFrame(right, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5,5,5,5));
 
-        canvasTop = new TRootEmbeddedCanvas("canvasTop", right, 600, 500);
-        right->AddFrame(canvasTop, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY,5,5,5,5));
+        TGHorizontalFrame *topRow = new TGHorizontalFrame(right);
+        right->AddFrame(topRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
-        canvasBottom = new TRootEmbeddedCanvas("canvasBottom", right, 600, 500);
-        right->AddFrame(canvasBottom, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        canvasTopLeft = new TRootEmbeddedCanvas("canvasTopLeft", topRow, 600, 500);
+        topRow->AddFrame(canvasTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
-        bShow->Connect("Clicked()", "MyGUI", this, "DrawTree()");
-        bAddHist->Connect("Clicked()", "MyGUI", this, "AddHistogram()");
-        bFit->Connect("Clicked()", "MyGUI", this, "DoFit()");
-        bDraw->Connect("Clicked()", "MyGUI", this, "DrawHistogram()");
-        bClear->Connect("Clicked()", "MyGUI", this, "ClearHistogram()");
+        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data selection");
+
+        canvasTopRight = new TRootEmbeddedCanvas("canvasTopRight", topRow, 600, 500);
+        topRow->AddFrame(canvasTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+
+        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data analysis");
+
+
+        TGHorizontalFrame *bottomRow = new TGHorizontalFrame(right);
+        right->AddFrame(bottomRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+
+        canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", bottomRow, 600, 500);
+        bottomRow->AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+
+        latexTitleCanvas.DrawLatex(0.40, 0.95, "Fit data");
+
+        canvasBottomRight = new TRootEmbeddedCanvas("canvasBottomRight", bottomRow, 600, 500);
+        bottomRow->AddFrame(canvasBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+
+        canvasBottomRight -> GetCanvas() -> cd();
+        canvasBottomRight -> GetCanvas() -> Clear();
+
+        gStyle -> SetOptStat(false);
+        gPad -> SetLogy(true);
+
+        histResults = new TH1D("histResults", "Analysis results", 4, 0, 4);
+        histResults -> GetXaxis() -> SetLabelSize(0.07);
+        histResults -> GetXaxis() -> SetBinLabel(1, "N. J/#psi");
+        histResults -> GetXaxis() -> SetBinLabel(2, "N. #psi(2S)");
+        histResults -> GetXaxis() -> SetBinLabel(3, "Signf. J/#psi");
+        histResults -> GetXaxis() -> SetBinLabel(4, "Signf. #psi(2S)");
+        histResults -> Draw("H");
+
+        canvasBottomRight -> GetCanvas() -> Update();
+
+        bShow -> Connect("Clicked()", "MyGUI", this, "DrawTree()");
+        bAddHist -> Connect("Clicked()", "MyGUI", this, "AddHistogram()");
+        bFitPlot -> Connect("Clicked()", "MyGUI", this, "FitDataFalse()");
+        bFit -> Connect("Clicked()", "MyGUI", this, "FitDataTrue()");
+        bResults -> Connect("Clicked()", "MyGUI", this, "UpdateResults()");
+        bDraw -> Connect("Clicked()", "MyGUI", this, "DrawHistograms()");
+        bClear -> Connect("Clicked()", "MyGUI", this, "ClearHistogram()");
 
         SetWindowName("Analysis prototype");
         MapSubwindows();
@@ -265,10 +358,10 @@ public:
         double etaMuMax = std::stod(entryEtaMuMax->GetText());
         int trackTypeMu = std::stod(entryTrackType->GetText());
 
-        string cut = "massa > 0 && massa < 6.5";
+        string cut = "mass > 0 && mass < 6.5";
         cut = cut + Form("&& pt > %f && pt < %f", ptDimuMin, ptDimuMax);
         cut = cut + Form("&& typeMu1 == %i && typeMu2 == %i", trackTypeMu, trackTypeMu);
-        cut = cut + Form("&& carica == %i", chargeDimu);
+        cut = cut + Form("&& charge == %i", chargeDimu);
         cut = cut + Form("&& ptMu1 > %f && ptMu1 < %f && ptMu2 > %f && ptMu2 < %f", ptMuMin, ptMuMax, ptMuMin, ptMuMax);
         cut = cut + Form("&& etaMu1 > %f && etaMu1 < %f && etaMu2 > %f && etaMu2 < %f", etaMuMin, etaMuMax, etaMuMin, etaMuMax);
 
@@ -281,11 +374,15 @@ public:
         histVar -> SetMarkerColor(kBlack);
         histVar -> SetLineColor(kBlack);
 
-        canvasTop -> GetCanvas() -> cd();
+        string xAxisName = histVar -> GetXaxis() -> GetTitle();
+        if (xAxisName == "mass") {histVar -> Rebin(2);}
+
+        canvasTopLeft -> GetCanvas() -> cd();
         gPad -> SetLogy(true);
         gStyle -> SetOptStat(false);
         histVar -> Draw("EP");
-        canvasTop -> GetCanvas() -> Update();
+        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data selection");
+        canvasTopLeft -> GetCanvas() -> Update();
 
         // Enable the button to add histograms
         bAddHist -> SetEnabled(true);
@@ -333,7 +430,7 @@ public:
 
     //--------------------------------------------//
     // Function to Draw selected histograms
-    void DrawHistogram() {
+    void DrawHistograms() {
 
         std::vector<string> xAxisTitle;
         for (auto &[name, hist] : histograms) {
@@ -346,28 +443,28 @@ public:
         for (auto &var : vars) {
             if (count(xAxisTitle.begin(), xAxisTitle.end(), var) > 0) {
                 chosenVars.push_back(var);
+                if (var == "mass") {
+                    bFit -> SetEnabled(true);
+                    bFitPlot -> SetEnabled(true);
+                }
             }
         }
         
-        canvasBottom -> GetCanvas() -> cd();
-        canvasBottom -> GetCanvas() -> Clear();
+        canvasTopRight -> GetCanvas() -> cd();
+        canvasTopRight -> GetCanvas() -> Clear();
 
-        std::cout << chosenVars.size() << std::endl;
         if (int(chosenVars.size()) < 4) {
-            canvasBottom -> GetCanvas() -> Divide(int(chosenVars.size()), 1);
+            canvasTopRight -> GetCanvas() -> Divide(int(chosenVars.size()), 1);
         } else if (int(chosenVars.size()) % 2 == 0) {
-            canvasBottom -> GetCanvas() -> Divide(int(chosenVars.size()) / 2, int(chosenVars.size()) / 2);
+            canvasTopRight -> GetCanvas() -> Divide(int(chosenVars.size()) / 2, int(chosenVars.size()) / 2);
         } else {
-            canvasBottom -> GetCanvas() -> Divide(3, 2);
+            canvasTopRight -> GetCanvas() -> Divide(3, 2);
         }
         
-
         int iColumn = 1;
         for (auto &chosenVar : chosenVars) {
-
-            canvasBottom -> GetCanvas() -> cd(iColumn);
+            canvasTopRight -> GetCanvas() -> cd(iColumn);
             gPad -> SetLogy(true);
-
             bool first = true;
             for (auto &[name, hist] : histograms) {
                 if (hist -> GetXaxis() -> GetTitle() == chosenVar) {
@@ -375,33 +472,189 @@ public:
                     first = false;
                 }
             }
-
             gPad -> BuildLegend();
-            
             iColumn++;
         }
-
-        canvasBottom -> GetCanvas() -> Update();
+        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data analysis");
+        canvasTopRight -> GetCanvas() -> Update();
     }
 
     //--------------------------------------------//
-    // Clear the list of the histograms
+    // Function to build the combinatorial background
+    void BuildBackground() {
+        std::cout << "BuildBackground" << std::endl;
+    }
+
+    //--------------------------------------------//
+    // Functio to clear the list of the histograms
     void ClearHistogram() {
         bDraw -> SetEnabled(false);
         bClear -> SetEnabled(false);
+        bFit -> SetEnabled(false);
+        bFitPlot -> SetEnabled(false);
+        bResults -> SetEnabled(false);
         histograms.clear();
         histogramNames.clear();
-        DrawHistogram();
+        DrawHistograms();
     }
 
-    void DoFit() {
-        double xmin = atof(fitMin->GetText());
-        double xmax = atof(fitMax->GetText());
+    //--------------------------------------------//
+    // Function to fit the data
+    void FitData(bool doFit = false) {
+        string histToFit = entryHistToFit -> GetText();
+        double fitMin = atof(entryFitMin -> GetText());
+        double fitMax = atof(entryFitMax -> GetText());
+        double fitMeanMin = atof(entryFitMeanMin -> GetText());
+        double fitMeanMax = atof(entryFitMeanMax -> GetText());
+        double fitWidthMin = atof(entryFitWidthMin -> GetText());
+        double fitWidthMax = atof(entryFitWidthMax -> GetText());
 
-        TF1 *gaus = new TF1("gausFit", "gaus", xmin, xmax);
-        histVar -> Fit(gaus, "R");
+        canvasBottomLeft -> GetCanvas() -> cd();
+        canvasBottomLeft -> GetCanvas() -> Clear();
+        histograms[histToFit] -> SetMarkerColor(kBlack);
+        histograms[histToFit] -> Draw("EP");
+        histograms[histToFit] -> GetXaxis() -> SetRangeUser(2,5);
 
-        canvasTop->GetCanvas()->Update();
+        if (doFit) {
+            TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
+            funcFit -> SetNpx(1000);
+            funcFit -> SetParameter(0, 50);
+            funcFit -> SetParLimits(1, fitMeanMin, fitMeanMax);
+            funcFit -> SetParLimits(2, fitWidthMin, fitWidthMax);
+            funcFit -> SetParameter(3, 20);
+            funcFit -> FixParameter(4, 3.686);
+            funcFit -> FixParameter(5, 0.07);
+            histograms[histToFit] -> Fit(funcFit, "R0");
+
+            TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
+            funcBkg -> SetNpx(1000);
+            funcBkg -> SetParameter(0, funcFit -> GetParameter(6));
+            funcBkg -> SetParameter(1, funcFit -> GetParameter(7));
+            funcBkg -> SetParameter(2, funcFit -> GetParameter(8));
+            funcBkg -> SetLineStyle(kDashed);
+            funcBkg -> SetLineColor(kGray+2);
+
+            TF1 *funcJpsi = new TF1("funcJpsi", "gaus", fitMin, fitMax);
+            funcJpsi -> SetNpx(1000);
+            funcJpsi -> SetParameter(0, funcFit -> GetParameter(0));
+            funcJpsi -> SetParameter(1, funcFit -> GetParameter(1));
+            funcJpsi -> SetParameter(2, funcFit -> GetParameter(2));
+            funcJpsi -> SetLineStyle(kSolid);
+            funcJpsi -> SetLineColor(kAzure+4);
+
+            TF1 *funcPsi2s = new TF1("funcPsi2s", "gaus", fitMin, fitMax);
+            funcPsi2s -> SetNpx(1000);
+            funcPsi2s -> SetParameter(0, funcFit -> GetParameter(3));
+            funcPsi2s -> SetParameter(1, funcFit -> GetParameter(4));
+            funcPsi2s -> SetParameter(2, funcFit -> GetParameter(5));
+            funcPsi2s -> SetLineStyle(kSolid);
+            funcPsi2s -> SetLineColor(kGreen+2);
+
+            funcBkg -> Draw("SAME");
+            funcJpsi -> Draw("SAME");
+            funcPsi2s -> Draw("SAME");
+            funcFit -> Draw("SAME");
+
+            TLegend *legendFit = new TLegend(0.65, 0.65, 0.80, 0.87);
+            legendFit -> SetBorderSize(0);
+            legendFit -> SetFillColor(10);
+            legendFit -> SetFillStyle(1);
+            legendFit -> SetLineStyle(0);
+            legendFit -> SetLineColor(0);
+            legendFit -> SetTextFont(42);
+            legendFit -> SetTextSize(0.045);
+            legendFit -> AddEntry(funcFit, "Fit", "L");
+            legendFit -> AddEntry(funcJpsi, "J/#psi", "L");
+            legendFit -> AddEntry(funcPsi2s, "#psi(2S)", "L");
+            legendFit -> AddEntry(funcBkg, "Bkg.", "L");
+            legendFit -> Draw();
+
+
+            double meanJpsi = funcFit -> GetParameter(1);
+            double sigmaJpsi = funcFit -> GetParameter(2);
+            double intRangeJpsiMin = meanJpsi - (3*sigmaJpsi);
+            double intRangeJpsiMax = meanJpsi + (3*sigmaJpsi);
+
+            nJpsi = (funcJpsi -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histograms[histToFit] -> GetBinWidth(1));
+            errJpsi = TMath::Sqrt(nJpsi);
+
+            nBkgRangeJpsi = (funcBkg -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histograms[histToFit] -> GetBinWidth(1));
+            errBkgRangeJpsi = TMath::Sqrt(nBkgRangeJpsi);
+
+            signfJpsi = nJpsi / TMath::Sqrt(nJpsi + nBkgRangeJpsi);
+
+            double meanPsi2s = funcFit -> GetParameter(4);
+            double sigmaPsi2s = funcFit -> GetParameter(5);
+            double intRangePsi2sMin = meanPsi2s - (3*sigmaPsi2s);
+            double intRangePsi2sMax = meanPsi2s + (3*sigmaPsi2s);
+
+            nPsi2s = (funcPsi2s -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histograms[histToFit] -> GetBinWidth(1));
+            errPsi2s = TMath::Sqrt(nPsi2s);
+
+            nBkgRangePsi2s = (funcBkg -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histograms[histToFit] -> GetBinWidth(1));
+            errBkgRangePsi2s = TMath::Sqrt(nBkgRangePsi2s);
+
+            signfPsi2s = nPsi2s / TMath::Sqrt(nPsi2s + nBkgRangePsi2s);
+
+            TLatex latexTitle;
+            latexTitle.SetNDC();
+            latexTitle.SetTextSize(0.04);
+            latexTitle.SetTextFont(42);
+            latexTitle.DrawLatex(0.55, 0.60, Form("N. J/#psi^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nJpsi, errJpsi));
+            latexTitle.DrawLatex(0.55, 0.55, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nBkgRangeJpsi, errBkgRangeJpsi));
+            latexTitle.DrawLatex(0.55, 0.50, Form("N. #psi(2S)^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nPsi2s, errPsi2s));
+            latexTitle.DrawLatex(0.55, 0.45, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nBkgRangePsi2s, errBkgRangePsi2s));
+
+            bResults -> SetEnabled(true);
+        }
+
+        latexTitleCanvas.DrawLatex(0.40, 0.95, "Fit data");
+        canvasBottomLeft -> GetCanvas() -> Update();
+    }
+
+    //--------------------------------------------//
+    // Function to be called by the fit button
+    void FitDataTrue() {
+        FitData(true);
+    }
+
+    //--------------------------------------------//
+    // Function to be called by the plot button
+    void FitDataFalse() {
+        FitData(false);
+    }
+
+    //--------------------------------------------//
+    // Function to fit the data
+    void UpdateResults() {
+
+        canvasBottomLeft -> GetCanvas() -> cd();
+        canvasBottomLeft -> GetCanvas() -> Clear();
+
+        histResults -> GetXaxis() -> SetLabelSize(0.07);
+        histResults -> SetBinContent(1, nJpsi);
+        histResults -> SetBinError(1, errJpsi);
+        histResults -> SetBinContent(2, nPsi2s);
+        histResults -> SetBinError(2, errPsi2s);
+        histResults -> SetBinContent(3, signfJpsi);
+        histResults -> SetBinError(3, 0);
+        histResults -> SetBinContent(4, signfPsi2s);
+        histResults -> SetBinError(4, 0);
+        histResults -> Draw("H");
+
+        TLine *line3sigma = new TLine(0, 3, 4, 3);
+        line3sigma -> SetLineColor(kRed+1);
+        line3sigma -> Draw("SAME");
+
+        TLine *line5sigma = new TLine(0, 5, 4, 5);
+        line5sigma -> SetLineColor(kRed+1);
+        line5sigma -> Draw("SAME");
+
+        TLine *line7sigma = new TLine(0, 7, 4, 7);
+        line7sigma -> SetLineColor(kRed+1);
+        line7sigma -> Draw("SAME");
+
+        canvasBottomRight -> GetCanvas() -> Update();
     }
 
     virtual ~MyGUI() { Cleanup(); }
