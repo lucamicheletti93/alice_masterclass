@@ -4,7 +4,7 @@
 void rewriteTree() {
 
     TFile *fOut = new TFile("data.root", "RECREATE");
-    double massa, pt, eta, etaMu1, etaMu2;
+    double massa, pt, eta, ptMu1, ptMu2, etaMu1, etaMu2;
     int carica, caricaMu1, caricaMu2, typeMu1, typeMu2;
     TTree *treeOut = new TTree("data", "data");
 
@@ -12,6 +12,8 @@ void rewriteTree() {
     treeOut -> Branch("pt", &pt);
     treeOut -> Branch("eta", &eta);
     treeOut -> Branch("carica", &carica);
+    treeOut -> Branch("ptMu1", &ptMu1);
+    treeOut -> Branch("ptMu2", &ptMu2);
     treeOut -> Branch("etaMu1", &etaMu1);
     treeOut -> Branch("etaMu2", &etaMu2);
     treeOut -> Branch("caricaMu1", &caricaMu1);
@@ -25,6 +27,8 @@ void rewriteTree() {
     TTreeReaderValue<Float_t> fMass(myReader, "fMass");
     TTreeReaderValue<Float_t> fPt(myReader, "fPt");
     TTreeReaderValue<Float_t> fEta(myReader, "fEta");
+    TTreeReaderValue<Float_t> fPt1(myReader, "fPt1");
+    TTreeReaderValue<Float_t> fPt2(myReader, "fPt2");
     TTreeReaderValue<Float_t> fEta1(myReader, "fEta1");
     TTreeReaderValue<Float_t> fEta2(myReader, "fEta2");
     TTreeReaderValue<Int_t> fSign1(myReader, "fSign1");
@@ -36,6 +40,8 @@ void rewriteTree() {
         massa = *fMass;
         pt = *fPt;
         eta = *fEta;
+        ptMu1 = *fPt1;
+        ptMu2 = *fPt2;
         etaMu1 = -(*fEta1);
         etaMu2 = -(*fEta2);
         caricaMu1 = *fSign1;
