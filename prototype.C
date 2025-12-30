@@ -3,6 +3,7 @@
 #include <TGButton.h>
 #include <TGLabel.h>
 #include <TGTextEntry.h>
+#include <TGToolTip.h>
 #include <TRootEmbeddedCanvas.h>
 #include <TH1D.h>
 #include <TF1.h>
@@ -17,28 +18,34 @@ private:
     TGTextEntry *entryPtMuMin, *entryPtMuMax, *entryEtaMuMin, *entryEtaMuMax, *entryTrackType;
     TGTextEntry *entryHistName;
     TGTextEntry *entryFitMeanMin, *entryFitMeanMax, *entryFitWidthMin, *entryFitWidthMax, *entryFitMin, *entryFitMax;
-    TGLabel *labelHistStatus;
+
+    TGLabel *labelHistStatus, *labelHistFitStatus;
+
     TRootEmbeddedCanvas *canvasTopLeft, *canvasTopRight, *canvasBottomLeft, *canvasBottomRight;
-    TGComboBox  *comboVar, *comboHists;
+
+    TGComboBox  *comboVar;
 
     TGCheckButton *cbChargePlus, *cbChargeMinus, *cbChargeZero;
 
     TGTextButton *bAddHist, *bDraw, *bClear;
-    TGTextButton *bFitPlot, *bFit, *bResults;
+    TGTextButton *bBuildBkg;
+    TGTextButton *bFitPlot, *bSubtractBkg, *bFit, *bResults;
 
     ROOT::RDF::RNode df;
+
     ROOT::RDF::RResultPtr<TH1D> histVar;
     ROOT::RDF::RResultPtr<TH1D> histDimuMassPM, histDimuMassPP, histDimuMassMM;
 
-    TLatex latexTitleCanvas;
-
-    TH1D *histResults;
-
-    // Selected histograms
     std::map<std::string, ROOT::RDF::RResultPtr<TH1D>> histograms;
+
     std::vector<string> histogramNames;
 
+    TLatex latexTitleCanvas;
+
+    TH1D *histResults, *histDimuMassToFit, *histDimuMassPPMM;
+
     double nJpsi, errJpsi, nPsi2s, errPsi2s, nBkgRangeJpsi, errBkgRangeJpsi, nBkgRangePsi2s, errBkgRangePsi2s, signfJpsi, signfPsi2s;
+    bool removeBkg, subtractBkg;
 
 
 
@@ -160,6 +167,12 @@ public:
         bDraw -> SetEnabled(false);
         analysisFrame->AddFrame(bDraw, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
 
+        bBuildBkg = new TGTextButton(analysisFrame, "Build background");
+        bBuildBkg -> SetEnabled(false);
+        bBuildBkg -> SetToolTipText("Se disabilitato, per abilitare selezionare mass\ne 3 cariche per il dimuone = 0, +2, -2");
+        analysisFrame -> AddFrame(bBuildBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        removeBkg = false;
+
         bClear = new TGTextButton(analysisFrame, "Clear all histograms");
         bClear -> SetEnabled(false);
         analysisFrame->AddFrame(bClear, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
@@ -170,9 +183,18 @@ public:
 
         AddInput(fitFrame, "Histogram to fit", entryHistToFit, "");
 
+        labelHistFitStatus = new TGLabel(fitFrame, "No histogram selected");
+        fitFrame -> AddFrame(labelHistFitStatus, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+
         bFitPlot = new TGTextButton(fitFrame, "Plot histogram to fit");
-        fitFrame->AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        fitFrame -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         bFitPlot -> SetEnabled(false);
+
+        bSubtractBkg = new TGTextButton(fitFrame, "Subtract background");
+        bSubtractBkg -> SetToolTipText("Se disabilitato, e' necessario Build background");
+        fitFrame -> AddFrame(bSubtractBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        bSubtractBkg -> SetEnabled(false);
+        subtractBkg = false;
 
         TGCompositeFrame *tableFit = new TGCompositeFrame(fitFrame);
         tableFit -> SetLayoutManager(new TGTableLayout(tableFit, 4, 4));
@@ -232,11 +254,11 @@ public:
 
 
         bFit = new TGTextButton(fitFrame, "Fit data");
-        fitFrame->AddFrame(bFit, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        fitFrame -> AddFrame(bFit, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         bFit -> SetEnabled(false);
 
         bResults = new TGTextButton(fitFrame, "Add to results");
-        fitFrame->AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        fitFrame -> AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         bResults -> SetEnabled(false);
 
         // =====================================================
@@ -286,12 +308,19 @@ public:
         histResults -> GetXaxis() -> SetBinLabel(2, "N. #psi(2S)");
         histResults -> GetXaxis() -> SetBinLabel(3, "Signf. J/#psi");
         histResults -> GetXaxis() -> SetBinLabel(4, "Signf. #psi(2S)");
+        histResults -> GetYaxis() -> SetRangeUser(0.1, 1e3);
         histResults -> Draw("H");
+
+        TLine *line3sigma = new TLine(2, 3, 4, 3);
+        line3sigma -> SetLineColor(kRed+1);
+        line3sigma -> Draw("SAME");
 
         canvasBottomRight -> GetCanvas() -> Update();
 
-        bShow -> Connect("Clicked()", "MyGUI", this, "DrawTree()");
+        bShow -> Connect("Clicked()", "MyGUI", this, "DrawDataset()");
         bAddHist -> Connect("Clicked()", "MyGUI", this, "AddHistogram()");
+        bBuildBkg -> Connect("Clicked()", "MyGUI", this, "BuildBackground()");
+        bSubtractBkg -> Connect("Clicked()", "MyGUI", this, "EnableSubtractBkg()");
         bFitPlot -> Connect("Clicked()", "MyGUI", this, "FitDataFalse()");
         bFit -> Connect("Clicked()", "MyGUI", this, "FitDataTrue()");
         bResults -> Connect("Clicked()", "MyGUI", this, "UpdateResults()");
@@ -345,7 +374,7 @@ public:
 
     //--------------------------------------------//
     // Function to draw the data in the canvas
-    void DrawTree() {
+    void DrawDataset() {
         TString var = GetSelectedVariable();
         if (var.IsNull()) return;
         
@@ -397,7 +426,6 @@ public:
 
         // If the user does not select the name, the default one is used
         if (histName == "") {
-            std::cout << histVar -> GetName() << std::endl;
             histName = histVar -> GetName();
         }
 
@@ -424,7 +452,16 @@ public:
             histograms[histName] = histVar;
             histograms[histName] -> SetName(histName.c_str());
             histograms[histName] -> SetMarkerStyle(20);
-            histograms[histName] -> SetMarkerColor(int(histogramNames.size())+1);
+            histograms[histName] -> SetMarkerColor(int(histogramNames.size()));
+            histograms[histName] -> SetLineColor(int(histogramNames.size()));
+
+            string xAxisName = histograms[histName] -> GetXaxis() -> GetTitle();
+            if (xAxisName == "mass") {
+                (chargeDimu > 0) ? histDimuMassPP = histograms[histName] : (chargeDimu < 0) ? histDimuMassMM = histograms[histName] : histDimuMassPM = histograms[histName];
+            }
+            if (histDimuMassPM && histDimuMassPP && histDimuMassMM && histDimuMassPM -> GetEntries() > 0 && histDimuMassPP -> GetEntries() > 0 && histDimuMassMM -> GetEntries() > 0) {
+                bBuildBkg -> SetEnabled(true);
+            }
         }
     }
 
@@ -472,6 +509,14 @@ public:
                     first = false;
                 }
             }
+            if (removeBkg && chosenVar == "mass") {
+                histDimuMassPPMM -> SetName("2 * #sqrt{PP * MM}");
+                histDimuMassPPMM -> SetMarkerColor(kMagenta);
+                histDimuMassPPMM -> SetLineColor(kMagenta);
+                histDimuMassPPMM -> SetLineWidth(2);
+                histDimuMassPPMM -> Draw("H SAME");
+            }
+
             gPad -> BuildLegend();
             iColumn++;
         }
@@ -482,26 +527,44 @@ public:
     //--------------------------------------------//
     // Function to build the combinatorial background
     void BuildBackground() {
-        std::cout << "BuildBackground" << std::endl;
-    }
+        int minBinLeftSb = histDimuMassPM -> FindBin(1);
+        int maxBinLeftSb = histDimuMassPM -> FindBin(2);
+        int minBinRightSb = histDimuMassPM -> FindBin(4);
+        int maxBinRightSb = histDimuMassPM -> FindBin(5);
 
-    //--------------------------------------------//
-    // Functio to clear the list of the histograms
-    void ClearHistogram() {
-        bDraw -> SetEnabled(false);
-        bClear -> SetEnabled(false);
-        bFit -> SetEnabled(false);
-        bFitPlot -> SetEnabled(false);
-        bResults -> SetEnabled(false);
-        histograms.clear();
-        histogramNames.clear();
+        int nBins = histDimuMassPM -> GetNbinsX();
+        double minBin = histDimuMassPM -> GetBinLowEdge(1);
+        double maxBin = histDimuMassPM -> GetBinLowEdge(nBins) + histDimuMassPM -> GetBinWidth(nBins);
+
+        histDimuMassPPMM = new TH1D("histDimuMassPPMM", "", nBins, minBin, maxBin);
+
+        int PP, MM;
+        for (int iBin = 0;iBin < nBins;iBin++) {
+            PP = histDimuMassPP -> GetBinContent(iBin+1);
+            MM = histDimuMassMM -> GetBinContent(iBin+1);
+            histDimuMassPPMM -> SetBinContent(iBin+1, 2 * TMath::Sqrt(PP * MM));
+            histDimuMassPPMM -> SetBinError(iBin+1, TMath::Sqrt(2 * TMath::Sqrt(PP * MM)));
+        }
+
+        double leftSbPM = histDimuMassPM -> Integral(minBinLeftSb, maxBinLeftSb);
+        double rightSbPM = histDimuMassPM -> Integral(minBinRightSb, maxBinRightSb);
+        double leftSbPP = histDimuMassPP -> Integral(minBinLeftSb, maxBinLeftSb);
+        double rightSbPP = histDimuMassPP -> Integral(minBinRightSb, maxBinRightSb);
+        double leftSbMM = histDimuMassMM -> Integral(minBinLeftSb, maxBinLeftSb);
+        double rightSbMM = histDimuMassMM -> Integral(minBinRightSb, maxBinRightSb);
+        double leftSbPPMM = histDimuMassPPMM -> Integral(minBinLeftSb, maxBinLeftSb);
+        double rightSbPPMM = histDimuMassPPMM -> Integral(minBinRightSb, maxBinRightSb);
+        histDimuMassPPMM -> Scale((leftSbPM + rightSbPM) / (leftSbPPMM + rightSbPPMM));
+
+        bSubtractBkg -> SetEnabled(true);
+        removeBkg = true;
         DrawHistograms();
     }
 
     //--------------------------------------------//
     // Function to fit the data
     void FitData(bool doFit = false) {
-        string histToFit = entryHistToFit -> GetText();
+        string nameHistToFit = entryHistToFit -> GetText();
         double fitMin = atof(entryFitMin -> GetText());
         double fitMax = atof(entryFitMax -> GetText());
         double fitMeanMin = atof(entryFitMeanMin -> GetText());
@@ -509,107 +572,163 @@ public:
         double fitWidthMin = atof(entryFitWidthMin -> GetText());
         double fitWidthMax = atof(entryFitWidthMax -> GetText());
 
-        canvasBottomLeft -> GetCanvas() -> cd();
-        canvasBottomLeft -> GetCanvas() -> Clear();
-        histograms[histToFit] -> SetMarkerColor(kBlack);
-        histograms[histToFit] -> Draw("EP");
-        histograms[histToFit] -> GetXaxis() -> SetRangeUser(2,5);
+        if (nameHistToFit == "") {
+            labelHistFitStatus -> SetTextColor(kBlue);
+            labelHistFitStatus -> SetText("No histogram selected, select one!!!");
+            labelHistFitStatus -> MapWindow();
+            this -> Layout();
 
-        if (doFit) {
-            TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
-            funcFit -> SetNpx(1000);
-            funcFit -> SetParameter(0, 50);
-            funcFit -> SetParLimits(1, fitMeanMin, fitMeanMax);
-            funcFit -> SetParLimits(2, fitWidthMin, fitWidthMax);
-            funcFit -> SetParameter(3, 20);
-            funcFit -> FixParameter(4, 3.686);
-            funcFit -> FixParameter(5, 0.07);
-            histograms[histToFit] -> Fit(funcFit, "R0");
+        } else {
+            labelHistFitStatus -> SetTextColor(kBlue);
+            labelHistFitStatus -> SetText(Form("'%s' added!", nameHistToFit.c_str()));
+            labelHistFitStatus -> MapWindow();
+            this -> Layout();
 
-            TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
-            funcBkg -> SetNpx(1000);
-            funcBkg -> SetParameter(0, funcFit -> GetParameter(6));
-            funcBkg -> SetParameter(1, funcFit -> GetParameter(7));
-            funcBkg -> SetParameter(2, funcFit -> GetParameter(8));
-            funcBkg -> SetLineStyle(kDashed);
-            funcBkg -> SetLineColor(kGray+2);
+            canvasBottomLeft -> GetCanvas() -> cd();
+            canvasBottomLeft -> GetCanvas() -> Clear();
 
-            TF1 *funcJpsi = new TF1("funcJpsi", "gaus", fitMin, fitMax);
-            funcJpsi -> SetNpx(1000);
-            funcJpsi -> SetParameter(0, funcFit -> GetParameter(0));
-            funcJpsi -> SetParameter(1, funcFit -> GetParameter(1));
-            funcJpsi -> SetParameter(2, funcFit -> GetParameter(2));
-            funcJpsi -> SetLineStyle(kSolid);
-            funcJpsi -> SetLineColor(kAzure+4);
+            histDimuMassToFit = histograms[nameHistToFit].GetPtr();
 
-            TF1 *funcPsi2s = new TF1("funcPsi2s", "gaus", fitMin, fitMax);
-            funcPsi2s -> SetNpx(1000);
-            funcPsi2s -> SetParameter(0, funcFit -> GetParameter(3));
-            funcPsi2s -> SetParameter(1, funcFit -> GetParameter(4));
-            funcPsi2s -> SetParameter(2, funcFit -> GetParameter(5));
-            funcPsi2s -> SetLineStyle(kSolid);
-            funcPsi2s -> SetLineColor(kGreen+2);
+            if (subtractBkg) {
+                histDimuMassToFit -> Add(histDimuMassPPMM, -1);
+                subtractBkg = false;
+            }
 
-            funcBkg -> Draw("SAME");
-            funcJpsi -> Draw("SAME");
-            funcPsi2s -> Draw("SAME");
-            funcFit -> Draw("SAME");
+            int nBins = histDimuMassToFit -> GetNbinsX();
+            int minXbin = histDimuMassToFit -> FindBin(2);
+            std::vector<double> binContents;
+            bool hasNegative = false;
+            for (int iBin = minXbin;iBin < nBins;iBin++) {
+                binContents.push_back(histDimuMassToFit -> GetBinContent(iBin));
+                if (histDimuMassToFit -> GetBinContent(iBin) < 0) {hasNegative = true;}
+            }
 
-            TLegend *legendFit = new TLegend(0.65, 0.65, 0.80, 0.87);
-            legendFit -> SetBorderSize(0);
-            legendFit -> SetFillColor(10);
-            legendFit -> SetFillStyle(1);
-            legendFit -> SetLineStyle(0);
-            legendFit -> SetLineColor(0);
-            legendFit -> SetTextFont(42);
-            legendFit -> SetTextSize(0.045);
-            legendFit -> AddEntry(funcFit, "Fit", "L");
-            legendFit -> AddEntry(funcJpsi, "J/#psi", "L");
-            legendFit -> AddEntry(funcPsi2s, "#psi(2S)", "L");
-            legendFit -> AddEntry(funcBkg, "Bkg.", "L");
-            legendFit -> Draw();
+            double tmpMinYval = 0;
+            for (double binContent : binContents) {
+                if (hasNegative) {
+                    if (binContent < 0) {
+                        if (TMath::Abs(binContent) > TMath::Abs(tmpMinYval)) {
+                            tmpMinYval = binContent;
+                            std::cout << tmpMinYval << std::endl;
+                        }
+                    }
+                } else {
+                    tmpMinYval = 0;
+                }
+            }
+
+            double minYval = 1.5 * tmpMinYval;
+            double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> FindBin(3.1)));
+
+            std::cout << minYval << " " << maxYval << std::endl;
+
+            histDimuMassToFit -> SetMarkerColor(kBlack);
+            histDimuMassToFit -> GetXaxis() -> SetRangeUser(2, 5);
+            histDimuMassToFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
+            histDimuMassToFit -> Draw("EP");
+
+            if (doFit) {
+                TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
+                funcFit -> SetNpx(1000);
+                funcFit -> SetParameter(0, 50);
+                funcFit -> SetParLimits(1, fitMeanMin, fitMeanMax);
+                funcFit -> SetParLimits(2, fitWidthMin, fitWidthMax);
+                funcFit -> SetParameter(3, 20);
+                funcFit -> FixParameter(4, 3.686);
+                funcFit -> FixParameter(5, 0.07);
+                histDimuMassToFit -> Fit(funcFit, "R0");
+
+                TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
+                funcBkg -> SetNpx(1000);
+                funcBkg -> SetParameter(0, funcFit -> GetParameter(6));
+                funcBkg -> SetParameter(1, funcFit -> GetParameter(7));
+                funcBkg -> SetParameter(2, funcFit -> GetParameter(8));
+                funcBkg -> SetLineStyle(kDashed);
+                funcBkg -> SetLineColor(kGray+2);
+
+                TF1 *funcJpsi = new TF1("funcJpsi", "gaus", fitMin, fitMax);
+                funcJpsi -> SetNpx(1000);
+                funcJpsi -> SetParameter(0, funcFit -> GetParameter(0));
+                funcJpsi -> SetParameter(1, funcFit -> GetParameter(1));
+                funcJpsi -> SetParameter(2, funcFit -> GetParameter(2));
+                funcJpsi -> SetLineStyle(kSolid);
+                funcJpsi -> SetLineColor(kAzure+4);
+
+                TF1 *funcPsi2s = new TF1("funcPsi2s", "gaus", fitMin, fitMax);
+                funcPsi2s -> SetNpx(1000);
+                funcPsi2s -> SetParameter(0, funcFit -> GetParameter(3));
+                funcPsi2s -> SetParameter(1, funcFit -> GetParameter(4));
+                funcPsi2s -> SetParameter(2, funcFit -> GetParameter(5));
+                funcPsi2s -> SetLineStyle(kSolid);
+                funcPsi2s -> SetLineColor(kGreen+2);
+
+                funcBkg -> Draw("SAME");
+                funcJpsi -> Draw("SAME");
+                funcPsi2s -> Draw("SAME");
+                funcFit -> Draw("SAME");
+
+                TLegend *legendFit = new TLegend(0.65, 0.65, 0.80, 0.87);
+                legendFit -> SetBorderSize(0);
+                legendFit -> SetFillColor(10);
+                legendFit -> SetFillStyle(1);
+                legendFit -> SetLineStyle(0);
+                legendFit -> SetLineColor(0);
+                legendFit -> SetTextFont(42);
+                legendFit -> SetTextSize(0.045);
+                legendFit -> AddEntry(funcFit, "Fit", "L");
+                legendFit -> AddEntry(funcJpsi, "J/#psi", "L");
+                legendFit -> AddEntry(funcPsi2s, "#psi(2S)", "L");
+                legendFit -> AddEntry(funcBkg, "Bkg.", "L");
+                legendFit -> Draw();
 
 
-            double meanJpsi = funcFit -> GetParameter(1);
-            double sigmaJpsi = funcFit -> GetParameter(2);
-            double intRangeJpsiMin = meanJpsi - (3*sigmaJpsi);
-            double intRangeJpsiMax = meanJpsi + (3*sigmaJpsi);
+                double meanJpsi = funcFit -> GetParameter(1);
+                double sigmaJpsi = funcFit -> GetParameter(2);
+                double intRangeJpsiMin = meanJpsi - (3*sigmaJpsi);
+                double intRangeJpsiMax = meanJpsi + (3*sigmaJpsi);
 
-            nJpsi = (funcJpsi -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histograms[histToFit] -> GetBinWidth(1));
-            errJpsi = TMath::Sqrt(nJpsi);
+                nJpsi = (funcJpsi -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histDimuMassToFit -> GetBinWidth(1));
+                errJpsi = TMath::Sqrt(nJpsi);
 
-            nBkgRangeJpsi = (funcBkg -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histograms[histToFit] -> GetBinWidth(1));
-            errBkgRangeJpsi = TMath::Sqrt(nBkgRangeJpsi);
+                nBkgRangeJpsi = (funcBkg -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histDimuMassToFit -> GetBinWidth(1));
+                errBkgRangeJpsi = TMath::Sqrt(nBkgRangeJpsi);
 
-            signfJpsi = nJpsi / TMath::Sqrt(nJpsi + nBkgRangeJpsi);
+                signfJpsi = nJpsi / TMath::Sqrt(nJpsi + nBkgRangeJpsi);
 
-            double meanPsi2s = funcFit -> GetParameter(4);
-            double sigmaPsi2s = funcFit -> GetParameter(5);
-            double intRangePsi2sMin = meanPsi2s - (3*sigmaPsi2s);
-            double intRangePsi2sMax = meanPsi2s + (3*sigmaPsi2s);
+                double meanPsi2s = funcFit -> GetParameter(4);
+                double sigmaPsi2s = funcFit -> GetParameter(5);
+                double intRangePsi2sMin = meanPsi2s - (3*sigmaPsi2s);
+                double intRangePsi2sMax = meanPsi2s + (3*sigmaPsi2s);
 
-            nPsi2s = (funcPsi2s -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histograms[histToFit] -> GetBinWidth(1));
-            errPsi2s = TMath::Sqrt(nPsi2s);
+                nPsi2s = (funcPsi2s -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histDimuMassToFit -> GetBinWidth(1));
+                errPsi2s = TMath::Sqrt(nPsi2s);
 
-            nBkgRangePsi2s = (funcBkg -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histograms[histToFit] -> GetBinWidth(1));
-            errBkgRangePsi2s = TMath::Sqrt(nBkgRangePsi2s);
+                nBkgRangePsi2s = (funcBkg -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histDimuMassToFit -> GetBinWidth(1));
+                errBkgRangePsi2s = TMath::Sqrt(nBkgRangePsi2s);
 
-            signfPsi2s = nPsi2s / TMath::Sqrt(nPsi2s + nBkgRangePsi2s);
+                signfPsi2s = nPsi2s / TMath::Sqrt(nPsi2s + nBkgRangePsi2s);
 
-            TLatex latexTitle;
-            latexTitle.SetNDC();
-            latexTitle.SetTextSize(0.04);
-            latexTitle.SetTextFont(42);
-            latexTitle.DrawLatex(0.55, 0.60, Form("N. J/#psi^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nJpsi, errJpsi));
-            latexTitle.DrawLatex(0.55, 0.55, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nBkgRangeJpsi, errBkgRangeJpsi));
-            latexTitle.DrawLatex(0.55, 0.50, Form("N. #psi(2S)^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nPsi2s, errPsi2s));
-            latexTitle.DrawLatex(0.55, 0.45, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nBkgRangePsi2s, errBkgRangePsi2s));
+                TLatex latexTitle;
+                latexTitle.SetNDC();
+                latexTitle.SetTextSize(0.04);
+                latexTitle.SetTextFont(42);
+                latexTitle.DrawLatex(0.55, 0.60, Form("N. J/#psi^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nJpsi, errJpsi));
+                latexTitle.DrawLatex(0.55, 0.55, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nBkgRangeJpsi, errBkgRangeJpsi));
+                latexTitle.DrawLatex(0.55, 0.50, Form("N. #psi(2S)^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nPsi2s, errPsi2s));
+                latexTitle.DrawLatex(0.55, 0.45, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nBkgRangePsi2s, errBkgRangePsi2s));
 
-            bResults -> SetEnabled(true);
+                bResults -> SetEnabled(true);
+            }
         }
 
         latexTitleCanvas.DrawLatex(0.40, 0.95, "Fit data");
         canvasBottomLeft -> GetCanvas() -> Update();
+    }
+
+    //--------------------------------------------//
+    // Function to enable the background subtraction
+    void EnableSubtractBkg () {
+        subtractBkg = true;
     }
 
     //--------------------------------------------//
@@ -642,19 +761,38 @@ public:
         histResults -> SetBinError(4, 0);
         histResults -> Draw("H");
 
-        TLine *line3sigma = new TLine(0, 3, 4, 3);
+        TLine *line3sigma = new TLine(2, 3, 4, 3);
         line3sigma -> SetLineColor(kRed+1);
         line3sigma -> Draw("SAME");
 
-        TLine *line5sigma = new TLine(0, 5, 4, 5);
-        line5sigma -> SetLineColor(kRed+1);
-        line5sigma -> Draw("SAME");
-
-        TLine *line7sigma = new TLine(0, 7, 4, 7);
-        line7sigma -> SetLineColor(kRed+1);
-        line7sigma -> Draw("SAME");
-
         canvasBottomRight -> GetCanvas() -> Update();
+    }
+
+    //--------------------------------------------//
+    // Function to clear the list of the histograms
+    void ClearHistogram() {
+        bDraw -> SetEnabled(false);
+        bClear -> SetEnabled(false);
+        bSubtractBkg -> SetEnabled(false);
+        bFit -> SetEnabled(false);
+        bFitPlot -> SetEnabled(false);
+        bResults -> SetEnabled(false);
+
+        removeBkg = false;
+        subtractBkg = false;
+
+        histograms.clear();
+        histogramNames.clear();
+        /*if (histDimuMassPM && histDimuMassPP && histDimuMassMM && histDimuMassPM -> GetEntries() > 0 && histDimuMassPP -> GetEntries() > 0 && histDimuMassMM -> GetEntries() > 0) {
+            histDimuMassPM -> Reset();
+            histDimuMassPP -> Reset();
+            histDimuMassMM -> Reset();
+        }
+        if (histDimuMassToFit && histDimuMassPPMM && histDimuMassToFit -> GetEntries() > 0 && histDimuMassPPMM -> GetEntries() > 0) {
+            histDimuMassToFit -> Reset();
+            histDimuMassPPMM -> Reset();
+        }*/
+        DrawHistograms();
     }
 
     virtual ~MyGUI() { Cleanup(); }

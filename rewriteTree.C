@@ -6,6 +6,7 @@ void rewriteTree() {
     TFile *fOut = new TFile("data.root", "RECREATE");
     double mass, pt, eta, ptMu1, ptMu2, etaMu1, etaMu2;
     int charge, chargeMu1, chargeMu2, typeMu1, typeMu2;
+    //string typeMu1, typeMu2;
     TTree *treeOut = new TTree("data", "data");
 
     treeOut -> Branch("mass", &mass);
@@ -22,8 +23,9 @@ void rewriteTree() {
     treeOut -> Branch("typeMu2", &typeMu2);
 
     TFile *fIn = TFile::Open("treePbPb.root", "READ");
-    TTreeReader myReader("DF_2338498054383952/O2rtdilmtreerec", fIn);
+    TTreeReader myReader("DF_2338498065827712/O2rtdilmtreerec", fIn);
 
+    TTreeReaderValue<UInt_t> fMcDecision(myReader, "fMcDecision");
     TTreeReaderValue<Float_t> fMass(myReader, "fMass");
     TTreeReaderValue<Float_t> fPt(myReader, "fPt");
     TTreeReaderValue<Float_t> fEta(myReader, "fEta");
@@ -46,6 +48,23 @@ void rewriteTree() {
         etaMu2 = -(*fEta2);
         chargeMu1 = *fSign1;
         chargeMu2 = *fSign2;
+
+        /*if (*fTrackType1 == 0) {
+            typeMu1 = "MFT-MCH-MID";
+        } else if (*fTrackType1 == 3) {
+            typeMu1 = "MCH-MID";
+        } else {
+            typeMu1 = "MCH";
+        }
+
+        if (*fTrackType2 == 0) {
+            typeMu2 = "MFT-MCH-MID";
+        } else if (*fTrackType2 == 3) {
+            typeMu2 = "MCH-MID";
+        } else {
+            typeMu2 = "MCH";
+        }*/
+
         typeMu1 = *fTrackType1;
         typeMu2 = *fTrackType2;
 
@@ -56,7 +75,20 @@ void rewriteTree() {
         } else {
             charge = -2;
         }
-        treeOut -> Fill();
+
+        if (*fMcDecision == 3) {
+            double num = gRandom -> Rndm();
+            if (num <= 0.4) {
+                treeOut -> Fill();
+            }
+        } else if (*fMcDecision == 5) {
+            double num = gRandom -> Rndm();
+            if (num <= 0.1) {
+                treeOut -> Fill();
+            }
+        } else {
+            treeOut -> Fill();
+        }
     }
     fOut -> cd();
     treeOut -> Write();
