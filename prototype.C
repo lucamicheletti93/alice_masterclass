@@ -46,6 +46,7 @@ private:
 
     double nJpsi, errJpsi, nPsi2s, errPsi2s, nBkgRangeJpsi, errBkgRangeJpsi, nBkgRangePsi2s, errBkgRangePsi2s, signfJpsi, signfPsi2s;
     bool removeBkg, subtractBkg;
+    Color_t colorPalette[6] = {kBlack, kRed+1, kAzure+2, kGreen+1, kOrange+7, kViolet};
 
 
 
@@ -153,29 +154,33 @@ public:
         frameAddHist->AddFrame(bAddHist, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,10,5,5));
 
         entryHistName = new TGTextEntry(frameAddHist, new TGTextBuffer(30));
-        entryHistName->Resize(160, 22);
-        entryHistName->SetAlignment(kTextLeft);
-        entryHistName->SetToolTipText("Hist. name");
-        frameAddHist->AddFrame(entryHistName, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
+        entryHistName -> Resize(160, 22);
+        entryHistName -> SetAlignment(kTextLeft);
+        entryHistName -> SetToolTipText("Hist. name");
+        frameAddHist -> AddFrame(entryHistName, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
 
-        analysisFrame->AddFrame(frameAddHist, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        analysisFrame -> AddFrame(frameAddHist, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
 
         labelHistStatus = new TGLabel(analysisFrame, "No histogram added");
-        analysisFrame->AddFrame(labelHistStatus, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        analysisFrame -> AddFrame(labelHistStatus, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
 
-        bDraw = new TGTextButton(analysisFrame, "Plot selected histograms");
+        TGHorizontalFrame *frameDrawHists = new TGHorizontalFrame(analysisFrame);
+
+        bDraw = new TGTextButton(frameDrawHists, "Plot selected histograms");
         bDraw -> SetEnabled(false);
-        analysisFrame->AddFrame(bDraw, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        frameDrawHists -> AddFrame(bDraw, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+
+        bClear = new TGTextButton(frameDrawHists, "Clear all histograms");
+        bClear -> SetEnabled(false);
+        frameDrawHists -> AddFrame(bClear, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+
+        analysisFrame -> AddFrame(frameDrawHists, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
 
         bBuildBkg = new TGTextButton(analysisFrame, "Build background");
         bBuildBkg -> SetEnabled(false);
         bBuildBkg -> SetToolTipText("Se disabilitato, per abilitare selezionare mass\ne 3 cariche per il dimuone = 0, +2, -2");
         analysisFrame -> AddFrame(bBuildBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         removeBkg = false;
-
-        bClear = new TGTextButton(analysisFrame, "Clear all histograms");
-        bClear -> SetEnabled(false);
-        analysisFrame->AddFrame(bClear, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
 
         // ---------- FIT (BOTTOM) ----------
         TGGroupFrame *fitFrame = new TGGroupFrame(left, "Fit data");
@@ -274,12 +279,12 @@ public:
         TGHorizontalFrame *topRow = new TGHorizontalFrame(right);
         right->AddFrame(topRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
-        canvasTopLeft = new TRootEmbeddedCanvas("canvasTopLeft", topRow, 600, 500);
+        canvasTopLeft = new TRootEmbeddedCanvas("canvasTopLeft", topRow, 500, 400);
         topRow->AddFrame(canvasTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
         latexTitleCanvas.DrawLatex(0.40, 0.95, "Data selection");
 
-        canvasTopRight = new TRootEmbeddedCanvas("canvasTopRight", topRow, 600, 500);
+        canvasTopRight = new TRootEmbeddedCanvas("canvasTopRight", topRow, 500, 400);
         topRow->AddFrame(canvasTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
         latexTitleCanvas.DrawLatex(0.40, 0.95, "Data analysis");
@@ -288,12 +293,12 @@ public:
         TGHorizontalFrame *bottomRow = new TGHorizontalFrame(right);
         right->AddFrame(bottomRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
-        canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", bottomRow, 600, 500);
+        canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", bottomRow, 500, 400);
         bottomRow->AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
         latexTitleCanvas.DrawLatex(0.40, 0.95, "Fit data");
 
-        canvasBottomRight = new TRootEmbeddedCanvas("canvasBottomRight", bottomRow, 600, 500);
+        canvasBottomRight = new TRootEmbeddedCanvas("canvasBottomRight", bottomRow, 500, 400);
         bottomRow->AddFrame(canvasBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
         canvasBottomRight -> GetCanvas() -> cd();
@@ -451,9 +456,6 @@ public:
 
             histograms[histName] = histVar;
             histograms[histName] -> SetName(histName.c_str());
-            histograms[histName] -> SetMarkerStyle(20);
-            histograms[histName] -> SetMarkerColor(int(histogramNames.size()));
-            histograms[histName] -> SetLineColor(int(histogramNames.size()));
 
             string xAxisName = histograms[histName] -> GetXaxis() -> GetTitle();
             if (xAxisName == "mass") {
@@ -471,7 +473,6 @@ public:
 
         std::vector<string> xAxisTitle;
         for (auto &[name, hist] : histograms) {
-            //std::cout << hist -> GetXaxis() -> GetTitle() << std::endl;
             xAxisTitle.push_back(hist -> GetXaxis() -> GetTitle());
         }
 
@@ -503,10 +504,15 @@ public:
             canvasTopRight -> GetCanvas() -> cd(iColumn);
             gPad -> SetLogy(true);
             bool first = true;
+            int colorCounter = 0;
             for (auto &[name, hist] : histograms) {
                 if (hist -> GetXaxis() -> GetTitle() == chosenVar) {
+                    hist -> SetMarkerStyle(20);
+                    hist -> SetMarkerColor(colorPalette[colorCounter]);
+                    hist -> SetLineColor(colorPalette[colorCounter]);
                     hist -> Draw(first ? "EP" : "EP SAME");
                     first = false;
+                    colorCounter++;
                 }
             }
             if (removeBkg && chosenVar == "mass") {
@@ -806,7 +812,7 @@ public:
 
 void prototype() {
 
-    TFile *fIn = TFile::Open("data.root");
+    TFile *fIn = TFile::Open("dataMasterclass.root");
     TTree *tree = (TTree*)fIn -> Get("data");
     ROOT::RDataFrame df(*tree);
 
