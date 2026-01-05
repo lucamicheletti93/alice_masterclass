@@ -15,7 +15,7 @@ class MyGUI : public TGMainFrame {
 private:
     TGTextEntry *entryHistToFit;
     TGTextEntry *entryPtDimuMin, *entryPtDimuMax, *entryChargeDimu;
-    TGTextEntry *entryPtMuMin, *entryPtMuMax, *entryEtaMuMin, *entryEtaMuMax, *entryTrackType;
+    TGTextEntry *entryPtMuMin, *entryPtMuMax, *entryEtaMuMin, *entryEtaMuMax, *entryTrackType1, *entryTrackType2, *entryRebin;
     TGTextEntry *entryHistName;
     TGTextEntry *entryFitMeanMin, *entryFitMeanMax, *entryFitWidthMin, *entryFitWidthMax, *entryFitMin, *entryFitMax;
 
@@ -127,7 +127,9 @@ public:
         tableShow -> Resize();
 
         AddInput(showFrame, "Carica dimuone:", entryChargeDimu, "0");
-        AddInput(showFrame, "Type muone:", entryTrackType, "3");
+        AddInput(showFrame, "Track type:", entryTrackType1, "none");
+        AddInput(showFrame, "Track type:", entryTrackType2, "none");
+        AddInput(showFrame, "Rebin:", entryRebin, "1");
 
         TGHorizontalFrame *fVar = new TGHorizontalFrame(showFrame);
         fVar->AddFrame(new TGLabel(fVar, "Variabile:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
@@ -210,7 +212,7 @@ public:
         tableFit -> AddFrame(new TGLabel(tableFit, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
 
         // Min fit range
-        tableFit -> AddFrame(new TGLabel(tableFit, "Range"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableFit -> AddFrame(new TGLabel(tableFit, "Fit Range"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryFitMin = new TGTextEntry(tableFit, new TGTextBuffer(10));
         entryFitMin -> SetText("2");
@@ -383,25 +385,42 @@ public:
         TString var = GetSelectedVariable();
         if (var.IsNull()) return;
         
-        double ptDimuMin = std::stod(entryPtDimuMin->GetText());
-        double ptDimuMax = std::stod(entryPtDimuMax->GetText());
-        int chargeDimu = std::stod(entryChargeDimu->GetText());
-        double ptMuMin = std::stod(entryPtMuMin->GetText());
-        double ptMuMax = std::stod(entryPtMuMax->GetText());
-        double etaMuMin = std::stod(entryEtaMuMin->GetText());
-        double etaMuMax = std::stod(entryEtaMuMax->GetText());
-        int trackTypeMu = std::stod(entryTrackType->GetText());
+        double ptDimuMin = std::stod(entryPtDimuMin -> GetText());
+        double ptDimuMax = std::stod(entryPtDimuMax -> GetText());
+        int chargeDimu = std::stod(entryChargeDimu -> GetText());
+        double ptMuMin = std::stod(entryPtMuMin -> GetText());
+        double ptMuMax = std::stod(entryPtMuMax -> GetText());
+        double etaMuMin = std::stod(entryEtaMuMin -> GetText());
+        double etaMuMax = std::stod(entryEtaMuMax -> GetText());
+        int rebin = std::stod(entryRebin -> GetText());
 
-        string cut = "mass > 0 && mass < 6.5";
+        string strTrackType1 = entryTrackType1 -> GetText();
+        string strTrackType2 = entryTrackType2 -> GetText();
+
+        std::map<std::string, int> mapTrackType = {{"MFTMCHMID", 0}, {"MCHMID", 3}, {"MCH", 4}};
+
+        string cut = "mass > 0 && mass < 6";
         cut = cut + Form("&& pt > %f && pt < %f", ptDimuMin, ptDimuMax);
-        cut = cut + Form("&& typeMu1 == %i && typeMu2 == %i", trackTypeMu, trackTypeMu);
+
+        if (strTrackType1 != "none" && strTrackType2 != "none") {
+            cut = cut + Form("&& typeMu1 == %i && typeMu2 == %i", mapTrackType[strTrackType1], mapTrackType[strTrackType2]);
+        } else if (strTrackType1 != "none" && strTrackType2 == "none") {
+            cut = cut + Form("&& typeMu1 == %i", mapTrackType[strTrackType1]);
+        } else {
+            cut = cut + Form("&& typeMu2 == %i", mapTrackType[strTrackType2]);
+        }
+
         cut = cut + Form("&& charge == %i", chargeDimu);
         cut = cut + Form("&& ptMu1 > %f && ptMu1 < %f && ptMu2 > %f && ptMu2 < %f", ptMuMin, ptMuMax, ptMuMin, ptMuMax);
         cut = cut + Form("&& etaMu1 > %f && etaMu1 < %f && etaMu2 > %f && etaMu2 < %f", etaMuMin, etaMuMax, etaMuMin, etaMuMax);
 
-        histVar = df.Filter(cut).Histo1D(var);
+        if (var == "mass") {
+            histVar = df.Filter(cut).Histo1D({"hVar", Form(";%s;counts", var.Data()), 600, 0.0, 6.0}, var);
+        } else {
+            histVar = df.Filter(cut).Histo1D(var);
+        }
+        histVar -> Rebin(rebin);
         histVar -> SetTitle("");
-        histVar -> GetXaxis() -> SetRangeUser(0, 6);
         histVar -> GetXaxis() -> SetTitle(var);
         histVar -> GetYaxis() -> SetTitle("counts");
         histVar -> SetMarkerStyle(20);
@@ -409,7 +428,6 @@ public:
         histVar -> SetLineColor(kBlack);
 
         string xAxisName = histVar -> GetXaxis() -> GetTitle();
-        if (xAxisName == "mass") {histVar -> Rebin(2);}
 
         canvasTopLeft -> GetCanvas() -> cd();
         gPad -> SetLogy(true);
@@ -542,6 +560,10 @@ public:
         double minBin = histDimuMassPM -> GetBinLowEdge(1);
         double maxBin = histDimuMassPM -> GetBinLowEdge(nBins) + histDimuMassPM -> GetBinWidth(nBins);
 
+        std::cout << histDimuMassPM -> GetNbinsX() << " [ " << histDimuMassPM -> GetBinCenter(1) << " , " << histDimuMassPM -> GetBinCenter(5) << " ]" << std::endl;
+        std::cout << histDimuMassPP -> GetNbinsX() << " [ " << histDimuMassPP -> GetBinCenter(1) << " , " << histDimuMassPP -> GetBinCenter(5) << " ]" << std::endl;
+        std::cout << histDimuMassMM -> GetNbinsX() << " [ " << histDimuMassMM -> GetBinCenter(1) << " , " << histDimuMassMM -> GetBinCenter(5) << " ]" << std::endl;
+
         histDimuMassPPMM = new TH1D("histDimuMassPPMM", "", nBins, minBin, maxBin);
 
         int PP, MM;
@@ -640,8 +662,8 @@ public:
                 funcFit -> SetParLimits(1, fitMeanMin, fitMeanMax);
                 funcFit -> SetParLimits(2, fitWidthMin, fitWidthMax);
                 funcFit -> SetParameter(3, 20);
-                funcFit -> FixParameter(4, 3.686);
-                funcFit -> FixParameter(5, 0.07);
+                funcFit -> FixParameter(4, 3.675);
+                funcFit -> FixParameter(5, 0.099);
                 histDimuMassToFit -> Fit(funcFit, "R0");
 
                 TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
@@ -812,7 +834,7 @@ public:
 
 void prototype() {
 
-    TFile *fIn = TFile::Open("dataMasterclass.root");
+    TFile *fIn = TFile::Open("data.root");
     TTree *tree = (TTree*)fIn -> Get("data");
     ROOT::RDataFrame df(*tree);
 
