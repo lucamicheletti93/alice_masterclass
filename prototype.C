@@ -13,6 +13,8 @@
 class MyGUI : public TGMainFrame {
 
 private:
+    TGHorizontalFrame *main;
+
     TGTextEntry *entryHistToFit;
     TGTextEntry *entryPtDimuMin, *entryPtDimuMax, *entryChargeDimu;
     TGTextEntry *entryPtMuMin, *entryPtMuMax, *entryEtaMuMin, *entryEtaMuMax, *entryTrackType1, *entryTrackType2, *entryRebin;
@@ -30,6 +32,7 @@ private:
     TGTextButton *bAddHist, *bDraw, *bClear;
     TGTextButton *bBuildBkg;
     TGTextButton *bFitPlot, *bSubtractBkg, *bFit, *bResults;
+    TGTextButton *bClose;
 
     ROOT::RDF::RNode df;
 
@@ -39,8 +42,6 @@ private:
     std::map<std::string, ROOT::RDF::RResultPtr<TH1D>> histograms;
 
     std::vector<string> histogramNames;
-
-    TLatex latexTitleCanvas;
 
     TH1D *histResults, *histDimuMassToFit, *histDimuMassPPMM;
 
@@ -56,7 +57,7 @@ public:
         // ===========================
         // MAIN FRAME
         // ===========================
-        TGHorizontalFrame *main = new TGHorizontalFrame(this); 
+        main = new TGHorizontalFrame(this); 
         
         AddFrame(main, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
 
@@ -193,15 +194,19 @@ public:
         labelHistFitStatus = new TGLabel(fitFrame, "No histogram selected");
         fitFrame -> AddFrame(labelHistFitStatus, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
 
-        bFitPlot = new TGTextButton(fitFrame, "Plot histogram to fit");
-        fitFrame -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        TGHorizontalFrame *frameFitHists = new TGHorizontalFrame(fitFrame);
+
+        bFitPlot = new TGTextButton(frameFitHists, "Plot histogram to fit");
+        frameFitHists -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         bFitPlot -> SetEnabled(false);
 
-        bSubtractBkg = new TGTextButton(fitFrame, "Subtract background");
+        bSubtractBkg = new TGTextButton(frameFitHists, "Subtract background");
         bSubtractBkg -> SetToolTipText("Se disabilitato, e' necessario Build background");
-        fitFrame -> AddFrame(bSubtractBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        frameFitHists -> AddFrame(bSubtractBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         bSubtractBkg -> SetEnabled(false);
         subtractBkg = false;
+
+        fitFrame -> AddFrame(frameFitHists, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
 
         TGCompositeFrame *tableFit = new TGCompositeFrame(fitFrame);
         tableFit -> SetLayoutManager(new TGTableLayout(tableFit, 4, 4));
@@ -268,40 +273,67 @@ public:
         fitFrame -> AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
         bResults -> SetEnabled(false);
 
+        bClose = new TGTextButton(fitFrame, "Close");
+        fitFrame -> AddFrame(bClose, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        bClose -> SetEnabled(true);
+
         // =====================================================
         // RIGHT FRAME
         // =====================================================
-        latexTitleCanvas.SetNDC();
-        latexTitleCanvas.SetTextSize(0.05);
-        latexTitleCanvas.SetTextFont(42);
-
         TGVerticalFrame *right = new TGVerticalFrame(main, 600);
         main -> AddFrame(right, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5,5,5,5));
 
+        // Top-row frame
         TGHorizontalFrame *topRow = new TGHorizontalFrame(right);
         right->AddFrame(topRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
 
-        canvasTopLeft = new TRootEmbeddedCanvas("canvasTopLeft", topRow, 500, 400);
-        topRow->AddFrame(canvasTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        // Data selection
+        TGVerticalFrame* frameTopLeft = new TGVerticalFrame(topRow, 500, 400, kFixedWidth);
+        topRow -> AddFrame(frameTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
 
-        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data selection");
+        TGLabel* titleTopLeft = new TGLabel(frameTopLeft, "Data selection");
+        titleTopLeft -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        frameTopLeft -> AddFrame(titleTopLeft, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
 
-        canvasTopRight = new TRootEmbeddedCanvas("canvasTopRight", topRow, 500, 400);
-        topRow->AddFrame(canvasTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        canvasTopLeft = new TRootEmbeddedCanvas("canvasTopLeft", frameTopLeft, 500, 400);
+        frameTopLeft -> AddFrame(canvasTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
 
-        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data analysis");
+        // Data analysis
+        TGVerticalFrame* frameTopRight = new TGVerticalFrame(topRow, 500, 400, kFixedWidth);
+        topRow -> AddFrame(frameTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
 
+        TGLabel* titleTopRight = new TGLabel(frameTopRight, "Data analysis");
+        titleTopRight -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        frameTopRight -> AddFrame(titleTopRight, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
 
+        canvasTopRight = new TRootEmbeddedCanvas("canvasTopRight", frameTopRight, 500, 400);
+        frameTopRight->AddFrame(canvasTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
+
+        // Bottom-row frame
         TGHorizontalFrame *bottomRow = new TGHorizontalFrame(right);
         right->AddFrame(bottomRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        
+        // Fit data
+        TGVerticalFrame* frameBottomLeft = new TGVerticalFrame(bottomRow, 500, 400, kFixedWidth);
+        bottomRow -> AddFrame(frameBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
 
-        canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", bottomRow, 500, 400);
-        bottomRow->AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        TGLabel* titleBottomLeft = new TGLabel(frameBottomLeft, "Fit data");
+        titleBottomLeft -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        frameBottomLeft -> AddFrame(titleBottomLeft, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
 
-        latexTitleCanvas.DrawLatex(0.40, 0.95, "Fit data");
+        canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", frameBottomLeft, 500, 400);
+        frameBottomLeft -> AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
 
-        canvasBottomRight = new TRootEmbeddedCanvas("canvasBottomRight", bottomRow, 500, 400);
-        bottomRow->AddFrame(canvasBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        // Analysis results
+        TGVerticalFrame* frameBottomRight = new TGVerticalFrame(bottomRow, 500, 400, kFixedWidth);
+        bottomRow -> AddFrame(frameBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
+
+        TGLabel* titleBottomRight = new TGLabel(frameBottomRight, "Analysis results");
+        titleBottomRight -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        frameBottomRight -> AddFrame(titleBottomRight, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
+
+        canvasBottomRight = new TRootEmbeddedCanvas("canvasBottomRight", frameBottomRight, 500, 400);
+        frameBottomRight->AddFrame(canvasBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
 
         canvasBottomRight -> GetCanvas() -> cd();
         canvasBottomRight -> GetCanvas() -> Clear();
@@ -309,7 +341,7 @@ public:
         gStyle -> SetOptStat(false);
         gPad -> SetLogy(true);
 
-        histResults = new TH1D("histResults", "Analysis results", 4, 0, 4);
+        histResults = new TH1D("", "", 4, 0, 4);
         histResults -> GetXaxis() -> SetLabelSize(0.07);
         histResults -> GetXaxis() -> SetBinLabel(1, "N. J/#psi");
         histResults -> GetXaxis() -> SetBinLabel(2, "N. #psi(2S)");
@@ -333,6 +365,7 @@ public:
         bResults -> Connect("Clicked()", "MyGUI", this, "UpdateResults()");
         bDraw -> Connect("Clicked()", "MyGUI", this, "DrawHistograms()");
         bClear -> Connect("Clicked()", "MyGUI", this, "ClearHistogram()");
+        bClose -> Connect("Clicked()", "MyGUI", this, "Close()");
 
         SetWindowName("Analysis prototype");
         MapSubwindows();
@@ -415,7 +448,7 @@ public:
         cut = cut + Form("&& etaMu1 > %f && etaMu1 < %f && etaMu2 > %f && etaMu2 < %f", etaMuMin, etaMuMax, etaMuMin, etaMuMax);
 
         if (var == "mass") {
-            histVar = df.Filter(cut).Histo1D({"hVar", Form(";%s;counts", var.Data()), 600, 0.0, 6.0}, var);
+            histVar = df.Filter(cut).Histo1D({"mass", Form(";%s;counts", var.Data()), 600, 0.0, 6.0}, var);
         } else {
             histVar = df.Filter(cut).Histo1D(var);
         }
@@ -433,7 +466,6 @@ public:
         gPad -> SetLogy(true);
         gStyle -> SetOptStat(false);
         histVar -> Draw("EP");
-        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data selection");
         canvasTopLeft -> GetCanvas() -> Update();
 
         // Enable the button to add histograms
@@ -544,7 +576,6 @@ public:
             gPad -> BuildLegend();
             iColumn++;
         }
-        latexTitleCanvas.DrawLatex(0.40, 0.95, "Data analysis");
         canvasTopRight -> GetCanvas() -> Update();
     }
 
@@ -749,7 +780,6 @@ public:
             }
         }
 
-        latexTitleCanvas.DrawLatex(0.40, 0.95, "Fit data");
         canvasBottomLeft -> GetCanvas() -> Update();
     }
 
@@ -821,6 +851,11 @@ public:
             histDimuMassPPMM -> Reset();
         }*/
         DrawHistograms();
+    }
+
+    void Close() {
+        main -> DeleteWindow();
+        gApplication -> Terminate(0);
     }
 
     virtual ~MyGUI() { Cleanup(); }

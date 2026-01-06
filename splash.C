@@ -34,7 +34,7 @@ public:
         main->AddFrame(bStart, new TGLayoutHints(kLHintsCenterX, 10,10,20,20));
 
         TGTextButton *bClose = new TGTextButton(main, "Close");
-        bClose->Connect("Clicked()", "SplashScreen", this, "CloseWindow()");
+        bClose->Connect("Clicked()", "SplashScreen", this, "Close()");
         main->AddFrame(bClose, new TGLayoutHints(kLHintsCenterX, 10,10,20,20));
 
         main->MapSubwindows();
@@ -43,12 +43,13 @@ public:
     }
 
     void Start() {
-        CloseWindow();
-        gROOT->Macro("prototype.C");
+        main -> DeleteWindow();
+        gROOT -> Macro("prototype.C");
     }
 
-    void CloseWindow() {
-        main->DeleteWindow();
+    void Close() {
+        main -> DeleteWindow();
+        gApplication -> Terminate(0); 
     }
 
     virtual ~SplashScreen() { Cleanup(); }
