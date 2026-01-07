@@ -65,11 +65,11 @@ public:
         //  LEFT FRAME
         // =====================================================
         TGVerticalFrame *left = new TGVerticalFrame(main, 300);
-        main->AddFrame(left, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5,5,5,5));
+        main->AddFrame(left, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5, 5, 5, 5));
 
         // ---------- SHOW (TOP) ----------
         TGGroupFrame *showFrame = new TGGroupFrame(left, "Data selection");
-        left -> AddFrame(showFrame, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
+        left -> AddFrame(showFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
 
         TGCompositeFrame *tableShow = new TGCompositeFrame(showFrame);
         tableShow -> SetLayoutManager(new TGTableLayout(tableShow, 4, 4));
@@ -80,34 +80,34 @@ public:
         tableShow -> AddFrame(new TGLabel(tableShow, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
 
         // Muon pT
-        tableShow -> AddFrame(new TGLabel(tableShow, "pT muone"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "pT muone"), new TGTableLayoutHints(0, 1, 1, 2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryPtMuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtMuMin -> SetText("0");
         entryPtMuMin -> Resize(80,22);
         entryPtMuMin -> SetAlignment(kTextCenterX);
-        tableShow -> AddFrame(entryPtMuMin, new TGTableLayoutHints(1,2,1,2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableShow -> AddFrame(entryPtMuMin, new TGTableLayoutHints(1, 2, 1, 2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
         entryPtMuMax = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtMuMax -> SetText("100");
         entryPtMuMax -> Resize(80,22);
         entryPtMuMax -> SetAlignment(kTextCenterX);
-        tableShow -> AddFrame(entryPtMuMax, new TGTableLayoutHints(2,3,1,2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableShow -> AddFrame(entryPtMuMax, new TGTableLayoutHints(2, 3, 1, 2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Muon eta
-        tableShow -> AddFrame(new TGLabel(tableShow, "eta muone"), new TGTableLayoutHints(0,1,2,3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "eta muone"), new TGTableLayoutHints(0, 1, 2, 3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryEtaMuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryEtaMuMin -> SetText("2.5");
         entryEtaMuMin -> Resize(80,22);
         entryEtaMuMin -> SetAlignment(kTextCenterX);
-        tableShow -> AddFrame(entryEtaMuMin, new TGTableLayoutHints(1,2,2,3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableShow -> AddFrame(entryEtaMuMin, new TGTableLayoutHints(1, 2, 2, 3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
         entryEtaMuMax = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryEtaMuMax -> SetText("4");
         entryEtaMuMax -> Resize(80,22);
         entryEtaMuMax -> SetAlignment(kTextCenterX);
-        tableShow -> AddFrame(entryEtaMuMax, new TGTableLayoutHints(2,3,2,3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableShow -> AddFrame(entryEtaMuMax, new TGTableLayoutHints(2, 3, 2, 3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Dimuon pt
         tableShow -> AddFrame(new TGLabel(tableShow, "pT dimuone"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
@@ -116,13 +116,13 @@ public:
         entryPtDimuMin -> SetText("0");
         entryPtDimuMin -> Resize(80,22);
         entryPtDimuMin -> SetAlignment(kTextCenterX);
-        tableShow -> AddFrame(entryPtDimuMin, new TGTableLayoutHints(1,2,3,4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableShow -> AddFrame(entryPtDimuMin, new TGTableLayoutHints(1, 2, 3, 4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
         entryPtDimuMax = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtDimuMax -> SetText("100");
         entryPtDimuMax -> Resize(80,22);
         entryPtDimuMax -> SetAlignment(kTextCenterX);
-        tableShow -> AddFrame(entryPtDimuMax, new TGTableLayoutHints(2,3,3,4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableShow -> AddFrame(entryPtDimuMax, new TGTableLayoutHints(2, 3, 3, 4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         tableShow -> MapSubwindows();
         tableShow -> Resize();
@@ -133,80 +133,80 @@ public:
         AddInput(showFrame, "Rebin:", entryRebin, "1");
 
         TGHorizontalFrame *fVar = new TGHorizontalFrame(showFrame);
-        fVar->AddFrame(new TGLabel(fVar, "Variabile:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
+        fVar->AddFrame(new TGLabel(fVar, "Variabile:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
 
         comboVar = new TGComboBox(fVar);
         comboVar->Resize(180, 22);
-        fVar->AddFrame(comboVar, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
+        fVar->AddFrame(comboVar, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
         showFrame->AddFrame(fVar, new TGLayoutHints(kLHintsExpandX));
 
         FillComboFromRDF();
 
         TGTextButton *bShow = new TGTextButton(showFrame, "Show data");
-        showFrame->AddFrame(bShow, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        showFrame->AddFrame(bShow, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
 
 
         // ---------- ANALYSIS (MID) ----------
         TGGroupFrame *analysisFrame = new TGGroupFrame(left, "Data analysis");
-        left->AddFrame(analysisFrame, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
+        left->AddFrame(analysisFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
 
         TGHorizontalFrame *frameAddHist = new TGHorizontalFrame(analysisFrame);
 
         bAddHist = new TGTextButton(frameAddHist, "Add");
         bAddHist -> SetEnabled(false);
-        frameAddHist->AddFrame(bAddHist, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,10,5,5));
+        frameAddHist->AddFrame(bAddHist, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 10, 5, 5));
 
         entryHistName = new TGTextEntry(frameAddHist, new TGTextBuffer(30));
         entryHistName -> Resize(160, 22);
         entryHistName -> SetAlignment(kTextLeft);
         entryHistName -> SetToolTipText("Hist. name");
-        frameAddHist -> AddFrame(entryHistName, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5,5,5,5));
+        frameAddHist -> AddFrame(entryHistName, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
 
-        analysisFrame -> AddFrame(frameAddHist, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        analysisFrame -> AddFrame(frameAddHist, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
         labelHistStatus = new TGLabel(analysisFrame, "No histogram added");
-        analysisFrame -> AddFrame(labelHistStatus, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        analysisFrame -> AddFrame(labelHistStatus, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
         TGHorizontalFrame *frameDrawHists = new TGHorizontalFrame(analysisFrame);
 
         bDraw = new TGTextButton(frameDrawHists, "Plot selected histograms");
         bDraw -> SetEnabled(false);
-        frameDrawHists -> AddFrame(bDraw, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        frameDrawHists -> AddFrame(bDraw, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
 
         bClear = new TGTextButton(frameDrawHists, "Clear all histograms");
         bClear -> SetEnabled(false);
-        frameDrawHists -> AddFrame(bClear, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        frameDrawHists -> AddFrame(bClear, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
 
-        analysisFrame -> AddFrame(frameDrawHists, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        analysisFrame -> AddFrame(frameDrawHists, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
         bBuildBkg = new TGTextButton(analysisFrame, "Build background");
         bBuildBkg -> SetEnabled(false);
         bBuildBkg -> SetToolTipText("Se disabilitato, per abilitare selezionare mass\ne 3 cariche per il dimuone = 0, +2, -2");
-        analysisFrame -> AddFrame(bBuildBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        analysisFrame -> AddFrame(bBuildBkg, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         removeBkg = false;
 
         // ---------- FIT (BOTTOM) ----------
         TGGroupFrame *fitFrame = new TGGroupFrame(left, "Fit data");
-        left->AddFrame(fitFrame, new TGLayoutHints(kLHintsExpandX, 5,5,5,5));
+        left->AddFrame(fitFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
 
-        AddInput(fitFrame, "Histogram to fit", entryHistToFit, "");
+        AddInput(fitFrame, "Histogram to fit", entryHistToFit, "none");
 
         labelHistFitStatus = new TGLabel(fitFrame, "No histogram selected");
-        fitFrame -> AddFrame(labelHistFitStatus, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        fitFrame -> AddFrame(labelHistFitStatus, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
         TGHorizontalFrame *frameFitHists = new TGHorizontalFrame(fitFrame);
 
         bFitPlot = new TGTextButton(frameFitHists, "Plot histogram to fit");
-        frameFitHists -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        frameFitHists -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         bFitPlot -> SetEnabled(false);
 
         bSubtractBkg = new TGTextButton(frameFitHists, "Subtract background");
         bSubtractBkg -> SetToolTipText("Se disabilitato, e' necessario Build background");
-        frameFitHists -> AddFrame(bSubtractBkg, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        frameFitHists -> AddFrame(bSubtractBkg, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         bSubtractBkg -> SetEnabled(false);
         subtractBkg = false;
 
-        fitFrame -> AddFrame(frameFitHists, new TGLayoutHints(kLHintsLeft, 5,5,10,5));
+        fitFrame -> AddFrame(frameFitHists, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
         TGCompositeFrame *tableFit = new TGCompositeFrame(fitFrame);
         tableFit -> SetLayoutManager(new TGTableLayout(tableFit, 4, 4));
@@ -217,34 +217,34 @@ public:
         tableFit -> AddFrame(new TGLabel(tableFit, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
 
         // Min fit range
-        tableFit -> AddFrame(new TGLabel(tableFit, "Fit Range"), new TGTableLayoutHints(0,1,1,2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableFit -> AddFrame(new TGLabel(tableFit, "Fit Range"), new TGTableLayoutHints(0, 1, 1, 2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryFitMin = new TGTextEntry(tableFit, new TGTextBuffer(10));
         entryFitMin -> SetText("2");
         entryFitMin -> Resize(80,22);
         entryFitMin -> SetAlignment(kTextCenterX);
-        tableFit -> AddFrame(entryFitMin, new TGTableLayoutHints(1,2,1,2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableFit -> AddFrame(entryFitMin, new TGTableLayoutHints(1, 2, 1, 2, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
         entryFitMax = new TGTextEntry(tableFit, new TGTextBuffer(10));
         entryFitMax -> SetText("5");
         entryFitMax -> Resize(80,22);
         entryFitMax -> SetAlignment(kTextCenterX);
-        tableFit -> AddFrame(entryFitMax, new TGTableLayoutHints(2,3,1,2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableFit -> AddFrame(entryFitMax, new TGTableLayoutHints(2, 3, 1, 2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Mean fit
-        tableFit -> AddFrame(new TGLabel(tableFit, "Signal mean"), new TGTableLayoutHints(0,1,2,3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableFit -> AddFrame(new TGLabel(tableFit, "Signal mean"), new TGTableLayoutHints(0, 1, 2, 3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryFitMeanMin = new TGTextEntry(tableFit, new TGTextBuffer(10));
         entryFitMeanMin -> SetText("2.95");
         entryFitMeanMin -> Resize(80,22);
         entryFitMeanMin -> SetAlignment(kTextCenterX);
-        tableFit -> AddFrame(entryFitMeanMin, new TGTableLayoutHints(1,2,2,3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableFit -> AddFrame(entryFitMeanMin, new TGTableLayoutHints(1, 2, 2, 3, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
         entryFitMeanMax = new TGTextEntry(tableFit, new TGTextBuffer(10));
         entryFitMeanMax -> SetText("3.3");
         entryFitMeanMax -> Resize(80,22);
         entryFitMeanMax -> SetAlignment(kTextCenterX);
-        tableFit -> AddFrame(entryFitMeanMax, new TGTableLayoutHints(2,3,2,3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableFit -> AddFrame(entryFitMeanMax, new TGTableLayoutHints(2, 3, 2, 3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Width fit
         tableFit -> AddFrame(new TGLabel(tableFit, "Signal width"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
@@ -253,39 +253,39 @@ public:
         entryFitWidthMin -> SetText("0");
         entryFitWidthMin -> Resize(80,22);
         entryFitWidthMin -> SetAlignment(kTextCenterX);
-        tableFit -> AddFrame(entryFitWidthMin, new TGTableLayoutHints(1,2,3,4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
+        tableFit -> AddFrame(entryFitWidthMin, new TGTableLayoutHints(1, 2, 3, 4, kLHintsCenterX | kLHintsExpandY, 0, 20, 0, 0));
 
         entryFitWidthMax = new TGTextEntry(tableFit, new TGTextBuffer(10));
         entryFitWidthMax -> SetText("0.1");
         entryFitWidthMax -> Resize(80,22);
         entryFitWidthMax -> SetAlignment(kTextCenterX);
-        tableFit -> AddFrame(entryFitWidthMax, new TGTableLayoutHints(2,3,3,4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
+        tableFit -> AddFrame(entryFitWidthMax, new TGTableLayoutHints(2, 3, 3, 4, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         tableFit -> MapSubwindows();
         tableFit -> Resize();
 
 
         bFit = new TGTextButton(fitFrame, "Fit data");
-        fitFrame -> AddFrame(bFit, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        fitFrame -> AddFrame(bFit, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         bFit -> SetEnabled(false);
 
         bResults = new TGTextButton(fitFrame, "Add to results");
-        fitFrame -> AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        fitFrame -> AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         bResults -> SetEnabled(false);
 
         bClose = new TGTextButton(fitFrame, "Close");
-        fitFrame -> AddFrame(bClose, new TGLayoutHints(kLHintsCenterX, 10,10,5,10));
+        fitFrame -> AddFrame(bClose, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         bClose -> SetEnabled(true);
 
         // =====================================================
         // RIGHT FRAME
         // =====================================================
         TGVerticalFrame *right = new TGVerticalFrame(main, 600);
-        main -> AddFrame(right, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5,5,5,5));
+        main -> AddFrame(right, new TGLayoutHints(kLHintsLeft | kLHintsExpandY, 5, 5, 5, 5));
 
         // Top-row frame
         TGHorizontalFrame *topRow = new TGHorizontalFrame(right);
-        right->AddFrame(topRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        right->AddFrame(topRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5, 5, 5, 5));
 
         // Data selection
         TGVerticalFrame* frameTopLeft = new TGVerticalFrame(topRow, 500, 400, kFixedWidth);
@@ -293,10 +293,10 @@ public:
 
         TGLabel* titleTopLeft = new TGLabel(frameTopLeft, "Data selection");
         titleTopLeft -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
-        frameTopLeft -> AddFrame(titleTopLeft, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
+        frameTopLeft -> AddFrame(titleTopLeft, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2, 2, 4, 2));
 
         canvasTopLeft = new TRootEmbeddedCanvas("canvasTopLeft", frameTopLeft, 500, 400);
-        frameTopLeft -> AddFrame(canvasTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
+        frameTopLeft -> AddFrame(canvasTopLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2, 2, 2, 2));
 
         // Data analysis
         TGVerticalFrame* frameTopRight = new TGVerticalFrame(topRow, 500, 400, kFixedWidth);
@@ -304,14 +304,14 @@ public:
 
         TGLabel* titleTopRight = new TGLabel(frameTopRight, "Data analysis");
         titleTopRight -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
-        frameTopRight -> AddFrame(titleTopRight, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
+        frameTopRight -> AddFrame(titleTopRight, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2, 2, 4, 2));
 
         canvasTopRight = new TRootEmbeddedCanvas("canvasTopRight", frameTopRight, 500, 400);
-        frameTopRight->AddFrame(canvasTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
+        frameTopRight->AddFrame(canvasTopRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2, 2, 2, 2));
 
         // Bottom-row frame
         TGHorizontalFrame *bottomRow = new TGHorizontalFrame(right);
-        right->AddFrame(bottomRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5,5,5,5));
+        right->AddFrame(bottomRow, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 5, 5, 5, 5));
         
         // Fit data
         TGVerticalFrame* frameBottomLeft = new TGVerticalFrame(bottomRow, 500, 400, kFixedWidth);
@@ -319,10 +319,10 @@ public:
 
         TGLabel* titleBottomLeft = new TGLabel(frameBottomLeft, "Fit data");
         titleBottomLeft -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
-        frameBottomLeft -> AddFrame(titleBottomLeft, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
+        frameBottomLeft -> AddFrame(titleBottomLeft, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2, 2, 4, 2));
 
         canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", frameBottomLeft, 500, 400);
-        frameBottomLeft -> AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
+        frameBottomLeft -> AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2, 2, 2, 2));
 
         // Analysis results
         TGVerticalFrame* frameBottomRight = new TGVerticalFrame(bottomRow, 500, 400, kFixedWidth);
@@ -330,10 +330,10 @@ public:
 
         TGLabel* titleBottomRight = new TGLabel(frameBottomRight, "Analysis results");
         titleBottomRight -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
-        frameBottomRight -> AddFrame(titleBottomRight, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2,2,4,2));
+        frameBottomRight -> AddFrame(titleBottomRight, new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2, 2, 4, 2));
 
         canvasBottomRight = new TRootEmbeddedCanvas("canvasBottomRight", frameBottomRight, 500, 400);
-        frameBottomRight->AddFrame(canvasBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2,2,2,2));
+        frameBottomRight->AddFrame(canvasBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2, 2, 2, 2));
 
         canvasBottomRight -> GetCanvas() -> cd();
         canvasBottomRight -> GetCanvas() -> Clear();
@@ -376,15 +376,25 @@ public:
     //-----------------------------------//
     // Add input to the frame
     void AddInput(TGCompositeFrame *parent, const char *label, TGTextEntry *&entry, const char *def) {
+        const int labelWidth = 90;
+        const int entryWidth = 120;
+        const int entryHeight = 22;
 
         TGHorizontalFrame *frame = new TGHorizontalFrame(parent);
-        frame->AddFrame(new TGLabel(frame, label), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 10,5,5,5));
 
-        entry = new TGTextEntry(frame, new TGTextBuffer(10));
-        entry->SetText(def);
-        frame->AddFrame(entry, new TGLayoutHints(kLHintsExpandX, 5,10,5,5));
+        TGHorizontalFrame* labelFrame = new TGHorizontalFrame(frame, labelWidth, entryHeight, kFixedWidth);
+        frame -> AddFrame(labelFrame, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 8, 5));
 
-        parent->AddFrame(frame, new TGLayoutHints(kLHintsExpandX));
+        TGLabel* entryLabel = new TGLabel(labelFrame, label);
+        labelFrame -> AddFrame(entryLabel, new TGLayoutHints(kLHintsLeft | kLHintsCenterY));
+
+        entry = new TGTextEntry(frame, "");
+        entry -> Resize(entryWidth, entryHeight);
+        entry -> SetAlignment(kTextCenterX);
+        entry -> SetText(def);
+        frame -> AddFrame(entry, new TGLayoutHints(kLHintsLeft | kLHintsCenterY));
+
+        parent -> AddFrame(frame, new TGLayoutHints(kLHintsExpandX));
     }
 
     //--------------------------------------------//
@@ -631,7 +641,7 @@ public:
         double fitWidthMin = atof(entryFitWidthMin -> GetText());
         double fitWidthMax = atof(entryFitWidthMax -> GetText());
 
-        if (nameHistToFit == "") {
+        if (nameHistToFit == "" || nameHistToFit == "none") {
             labelHistFitStatus -> SetTextColor(kBlue);
             labelHistFitStatus -> SetText("No histogram selected, select one!!!");
             labelHistFitStatus -> MapWindow();

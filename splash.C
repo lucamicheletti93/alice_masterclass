@@ -16,22 +16,23 @@ public:
     {
         SetWindowName("Masterclass");
 
-        main = new TGVerticalFrame(gClient->GetRoot(), 800, 800);
+        main = new TGVerticalFrame(gClient -> GetRoot(), 800, 800);
 
-        TGLabel *title = new TGLabel(main, "Welcome to ALICE Masterclass");
-        main->AddFrame(title, new TGLayoutHints(kLHintsCenterX, 10,10,20,10));
+        TGLabel *title = new TGLabel(main, "Welcome to ALICE Masterclass!");
+        title -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        main -> AddFrame(title, new TGLayoutHints(kLHintsCenterX, 10,10,20,10));
 
         TGVerticalFrame* vframe = new TGVerticalFrame(main, 800, 800);
         main->AddFrame(vframe, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
 
         TGPictureButton* button = new TGPictureButton(vframe, "ALICE_logo.png");
-        button->SetEnabled(kTRUE); // se vuoi solo mostrare l'immagine senza interazione
+        button -> SetEnabled(kTRUE); // se vuoi solo mostrare l'immagine senza interazione
 
-        vframe->AddFrame(button, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY));
+        vframe -> AddFrame(button, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY));
 
         TGTextButton *bStart = new TGTextButton(main, "Start analysis");
-        bStart->Connect("Clicked()", "SplashScreen", this, "Start()");
-        main->AddFrame(bStart, new TGLayoutHints(kLHintsCenterX, 10,10,20,20));
+        bStart -> Connect("Clicked()", "SplashScreen", this, "Start()");
+        main -> AddFrame(bStart, new TGLayoutHints(kLHintsCenterX, 10,10,20,20));
 
         TGTextButton *bClose = new TGTextButton(main, "Close");
         bClose->Connect("Clicked()", "SplashScreen", this, "Close()");
