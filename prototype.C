@@ -80,7 +80,7 @@ public:
         tableShow -> AddFrame(new TGLabel(tableShow, "Max"), new TGTableLayoutHints(2, 3, 0, 1, kLHintsCenterX));
 
         // Muon pT
-        tableShow -> AddFrame(new TGLabel(tableShow, "pT muone"), new TGTableLayoutHints(0, 1, 1, 2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "pT mu"), new TGTableLayoutHints(0, 1, 1, 2, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryPtMuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtMuMin -> SetText("0");
@@ -95,7 +95,7 @@ public:
         tableShow -> AddFrame(entryPtMuMax, new TGTableLayoutHints(2, 3, 1, 2, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Muon eta
-        tableShow -> AddFrame(new TGLabel(tableShow, "eta muone"), new TGTableLayoutHints(0, 1, 2, 3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "eta mu"), new TGTableLayoutHints(0, 1, 2, 3, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryEtaMuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryEtaMuMin -> SetText("2.5");
@@ -110,7 +110,7 @@ public:
         tableShow -> AddFrame(entryEtaMuMax, new TGTableLayoutHints(2, 3, 2, 3, kLHintsCenterX | kLHintsExpandY, 20, 0, 0, 0));
 
         // Dimuon pt
-        tableShow -> AddFrame(new TGLabel(tableShow, "pT dimuone"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
+        tableShow -> AddFrame(new TGLabel(tableShow, "pT dimu"), new TGTableLayoutHints(0,1,3,4, kLHintsLeft | kLHintsCenterY, 0, 10, 0, 0));
 
         entryPtDimuMin = new TGTextEntry(tableShow, new TGTextBuffer(10));
         entryPtDimuMin -> SetText("0");
@@ -127,10 +127,10 @@ public:
         tableShow -> MapSubwindows();
         tableShow -> Resize();
 
-        AddInput(showFrame, "Carica dimuone:", entryChargeDimu, "0");
-        AddInput(showFrame, "Track type:", entryTrackType1, "none");
-        AddInput(showFrame, "Track type:", entryTrackType2, "none");
-        AddInput(showFrame, "Rebin:", entryRebin, "1");
+        AddInput(showFrame, "Charge dimu", entryChargeDimu, "0");
+        AddInput(showFrame, "Track type mu1", entryTrackType1, "none");
+        AddInput(showFrame, "Track type mu2", entryTrackType2, "none");
+        AddInput(showFrame, "Rebin", entryRebin, "1");
 
         TGHorizontalFrame *fVar = new TGHorizontalFrame(showFrame);
         fVar->AddFrame(new TGLabel(fVar, "Variabile:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
