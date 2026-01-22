@@ -26,6 +26,7 @@ private:
     TRootEmbeddedCanvas *canvasTopLeft, *canvasTopRight, *canvasBottomLeft, *canvasBottomRight;
 
     TGComboBox  *comboVar;
+    TGComboBox  *comboTrackCut;
 
     TGCheckButton *cbChargePlus, *cbChargeMinus, *cbChargeZero;
 
@@ -39,11 +40,12 @@ private:
     ROOT::RDF::RResultPtr<TH1D> histVar;
     ROOT::RDF::RResultPtr<TH1D> histDimuMassPM, histDimuMassPP, histDimuMassMM;
 
-    std::map<std::string, ROOT::RDF::RResultPtr<TH1D>> histograms;
+    std::unordered_map<std::string, ROOT::RDF::RResultPtr<TH1D>> histograms;
 
     std::vector<string> histogramNames;
 
     TH1D *histResults, *histDimuMassToFit, *histDimuMassPPMM;
+    //TH2D *histGridFit;
 
     double nJpsi, errJpsi, nPsi2s, errPsi2s, nBkgRangeJpsi, errBkgRangeJpsi, nBkgRangePsi2s, errBkgRangePsi2s, signfJpsi, signfPsi2s;
     bool removeBkg, subtractBkg;
@@ -128,8 +130,21 @@ public:
         tableShow -> Resize();
 
         AddInput(showFrame, "Charge dimu", entryChargeDimu, "0");
-        AddInput(showFrame, "Track type mu1", entryTrackType1, "none");
-        AddInput(showFrame, "Track type mu2", entryTrackType2, "none");
+
+        TGHorizontalFrame *fTrackCut = new TGHorizontalFrame(showFrame);
+        fTrackCut->AddFrame(new TGLabel(fTrackCut, "Track type:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
+
+        comboTrackCut = new TGComboBox(fTrackCut);
+        comboTrackCut->Resize(180, 22);
+        fTrackCut->AddFrame(comboTrackCut, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
+        showFrame->AddFrame(fTrackCut, new TGLayoutHints(kLHintsExpandX));
+
+        comboTrackCut -> RemoveAll();
+        comboTrackCut -> AddEntry("MCH", 1);
+        comboTrackCut -> AddEntry("MCH-MID", 0);
+        comboTrackCut -> AddEntry("MFT-MCH-MID", 2);
+        comboTrackCut -> Select(2);
+
         AddInput(showFrame, "Rebin", entryRebin, "1");
 
         TGHorizontalFrame *fVar = new TGHorizontalFrame(showFrame);
@@ -324,6 +339,10 @@ public:
         canvasBottomLeft = new TRootEmbeddedCanvas("canvasBottomLeft", frameBottomLeft, 500, 400);
         frameBottomLeft -> AddFrame(canvasBottomLeft, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 2, 2, 2, 2));
 
+        //histGridFit = new TH2D("histGridFit", "", 100, 2, 5, 100, 0, 5000);
+        //histGridFit -> GetXaxis() -> SetTitle("mass (GeV/#it{c}^{2})");
+        //histGridFit -> Draw();
+
         // Analysis results
         TGVerticalFrame* frameBottomRight = new TGVerticalFrame(bottomRow, 500, 400, kFixedWidth);
         bottomRow -> AddFrame(frameBottomRight, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY));
@@ -337,22 +356,31 @@ public:
 
         canvasBottomRight -> GetCanvas() -> cd();
         canvasBottomRight -> GetCanvas() -> Clear();
-
+        canvasBottomRight -> GetCanvas() -> SetGrid();
         gStyle -> SetOptStat(false);
         gPad -> SetLogy(true);
 
         histResults = new TH1D("", "", 4, 0, 4);
         histResults -> GetXaxis() -> SetLabelSize(0.07);
-        histResults -> GetXaxis() -> SetBinLabel(1, "N. J/#psi");
-        histResults -> GetXaxis() -> SetBinLabel(2, "N. #psi(2S)");
-        histResults -> GetXaxis() -> SetBinLabel(3, "Signf. J/#psi");
-        histResults -> GetXaxis() -> SetBinLabel(4, "Signf. #psi(2S)");
-        histResults -> GetYaxis() -> SetRangeUser(0.1, 1e3);
-        histResults -> Draw("H");
+        histResults -> GetXaxis() -> SetBinLabel(1, "#it{N}_{J/#psi}");
+        histResults -> GetXaxis() -> SetBinLabel(2, "#it{N}_{#psi(2S)}");
+        histResults -> GetXaxis() -> SetBinLabel(3, "#sigma_{J/#psi}");
+        histResults -> GetXaxis() -> SetBinLabel(4, "#sigma_{#psi(2S)}");
+        histResults -> GetYaxis() -> SetRangeUser(0.1, histResults -> GetBinContent(1) * 1.5);
+        histResults -> SetFillStyle(1001);
+        histResults -> SetFillColorAlpha(kAzure+2, 0.7);
+        histResults -> SetMarkerStyle(20);
+        histResults -> SetMarkerColor(kAzure+2);
+        histResults -> SetLineColor(kAzure+2);
 
-        TLine *line3sigma = new TLine(2, 3, 4, 3);
-        line3sigma -> SetLineColor(kRed+1);
-        line3sigma -> Draw("SAME");
+        histResults -> SetBarWidth(0.5);
+        histResults -> SetBarOffset(0.25);
+
+        histResults -> Draw("BAR");
+
+        //TLine *line3sigma = new TLine(2, 3, 4, 3);
+        //line3sigma -> SetLineColor(kRed+1);
+        //line3sigma -> Draw("SAME");
 
         canvasBottomRight -> GetCanvas() -> Update();
 
@@ -409,14 +437,14 @@ public:
             comboVar -> AddEntry(column.c_str(), id++);
         }
 
-        comboVar -> Select(0);
+        comboVar -> Select(6); // Select invarian mass WARNING: make it more efficient
     }
 
     //--------------------------------------------//
     // Function to select the variables to show
-    TString GetSelectedVariable() const {
+    TString GetSelectedVariable(TGComboBox *combo) const {
 
-        TGTextLBEntry *varName = (TGTextLBEntry*) comboVar -> GetSelectedEntry();
+        TGTextLBEntry *varName = (TGTextLBEntry*) combo -> GetSelectedEntry();
 
         if (!varName) return "";
         return varName -> GetText() -> GetString();
@@ -425,7 +453,8 @@ public:
     //--------------------------------------------//
     // Function to draw the data in the canvas
     void DrawDataset() {
-        TString var = GetSelectedVariable();
+        TString var = GetSelectedVariable(comboVar);
+        TString trackCut = GetSelectedVariable(comboTrackCut);
         if (var.IsNull()) return;
         
         double ptDimuMin = std::stod(entryPtDimuMin -> GetText());
@@ -437,10 +466,13 @@ public:
         double etaMuMax = std::stod(entryEtaMuMax -> GetText());
         int rebin = std::stod(entryRebin -> GetText());
 
-        string strTrackType1 = entryTrackType1 -> GetText();
-        string strTrackType2 = entryTrackType2 -> GetText();
+        //string strTrackType1 = entryTrackType1 -> GetText();
+        //string strTrackType2 = entryTrackType2 -> GetText();
 
-        std::map<std::string, int> mapTrackType = {{"MFTMCHMID", 0}, {"MCHMID", 3}, {"MCH", 4}};
+        string strTrackType1 = trackCut.Data();
+        string strTrackType2 = trackCut.Data();
+
+        std::map<std::string, int> mapTrackType = {{"MFT-MCH-MID", 0}, {"MCH-MID", 3}, {"MCH", 4}};
 
         string cut = "mass > 0 && mass < 6";
         cut = cut + Form("&& pt > %f && pt < %f", ptDimuMin, ptDimuMax);
@@ -467,6 +499,7 @@ public:
         histVar -> GetXaxis() -> SetTitle(var);
         histVar -> GetYaxis() -> SetTitle("counts");
         histVar -> SetMarkerStyle(20);
+        histVar -> SetMarkerSize(0.5);
         histVar -> SetMarkerColor(kBlack);
         histVar -> SetLineColor(kBlack);
 
@@ -475,7 +508,7 @@ public:
         canvasTopLeft -> GetCanvas() -> cd();
         gPad -> SetLogy(true);
         gStyle -> SetOptStat(false);
-        histVar -> Draw("EP");
+        histVar -> Draw("HEP");
         canvasTopLeft -> GetCanvas() -> Update();
 
         // Enable the button to add histograms
@@ -564,15 +597,17 @@ public:
             canvasTopRight -> GetCanvas() -> cd(iColumn);
             gPad -> SetLogy(true);
             bool first = true;
-            int colorCounter = 0;
+            int colorCounter = histograms.size()-1;
+            std::cout << colorCounter << std::endl;
             for (auto &[name, hist] : histograms) {
+                std::cout << name << " ; " << colorCounter << std::endl;
                 if (hist -> GetXaxis() -> GetTitle() == chosenVar) {
                     hist -> SetMarkerStyle(20);
                     hist -> SetMarkerColor(colorPalette[colorCounter]);
                     hist -> SetLineColor(colorPalette[colorCounter]);
-                    hist -> Draw(first ? "EP" : "EP SAME");
+                    hist -> Draw(first ? "HEP" : "HEP SAME");
                     first = false;
-                    colorCounter++;
+                    colorCounter--;
                 }
             }
             if (removeBkg && chosenVar == "mass") {
@@ -580,6 +615,8 @@ public:
                 histDimuMassPPMM -> SetMarkerColor(kMagenta);
                 histDimuMassPPMM -> SetLineColor(kMagenta);
                 histDimuMassPPMM -> SetLineWidth(2);
+                histDimuMassPPMM -> SetFillStyle(3001);
+                histDimuMassPPMM -> SetFillColorAlpha(kMagenta, 0.5);
                 histDimuMassPPMM -> Draw("H SAME");
             }
 
@@ -663,6 +700,11 @@ public:
                 subtractBkg = false;
             }
 
+            // Cosmetics for the dimuon mass histogram
+            histDimuMassToFit -> SetMarkerStyle(20);
+            histDimuMassToFit -> SetMarkerColor(kBlack);
+            histDimuMassToFit -> SetLineColor(kBlack);
+
             int nBins = histDimuMassToFit -> GetNbinsX();
             int minXbin = histDimuMassToFit -> FindBin(2);
             std::vector<double> binContents;
@@ -687,11 +729,13 @@ public:
             }
 
             double minYval = 1.5 * tmpMinYval;
-            double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> FindBin(3.1)));
+            double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> GetXaxis() -> FindBin(2)));
 
-            std::cout << minYval << " " << maxYval << std::endl;
+            //histGridFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
+            //histGridFit -> Draw();
 
             histDimuMassToFit -> SetMarkerColor(kBlack);
+            histDimuMassToFit -> SetLineColor(kBlack);
             histDimuMassToFit -> GetXaxis() -> SetRangeUser(2, 5);
             histDimuMassToFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
             histDimuMassToFit -> Draw("EP");
@@ -705,7 +749,7 @@ public:
                 funcFit -> SetParameter(3, 20);
                 funcFit -> FixParameter(4, 3.675);
                 funcFit -> FixParameter(5, 0.099);
-                histDimuMassToFit -> Fit(funcFit, "R0");
+                histDimuMassToFit -> Fit(funcFit, "R0Q");
 
                 TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
                 funcBkg -> SetNpx(1000);
@@ -818,6 +862,8 @@ public:
         canvasBottomLeft -> GetCanvas() -> cd();
         canvasBottomLeft -> GetCanvas() -> Clear();
 
+        std::cout << nJpsi << " " << errJpsi << std::endl;
+        histResults -> GetYaxis() -> SetRangeUser(0.1, nJpsi * 5);
         histResults -> GetXaxis() -> SetLabelSize(0.07);
         histResults -> SetBinContent(1, nJpsi);
         histResults -> SetBinError(1, errJpsi);
@@ -827,11 +873,7 @@ public:
         histResults -> SetBinError(3, 0);
         histResults -> SetBinContent(4, signfPsi2s);
         histResults -> SetBinError(4, 0);
-        histResults -> Draw("H");
-
-        TLine *line3sigma = new TLine(2, 3, 4, 3);
-        line3sigma -> SetLineColor(kRed+1);
-        line3sigma -> Draw("SAME");
+        histResults -> Draw("BAR");
 
         canvasBottomRight -> GetCanvas() -> Update();
     }
