@@ -24,7 +24,8 @@ public:
         main -> SetBackgroundColor(bkgColor);
 
         TGLabel *title = new TGLabel(main, "Welcome to ALICE Masterclass!");
-        title -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        //title -> SetTextFont("-*-helvetica-bold-r-*-*-16-*-*-*-*-*-*-*");
+        title -> SetTextFont("helvetica", 18);
         title -> SetBackgroundColor(bkgColor);
         main -> AddFrame(title, new TGLayoutHints(kLHintsCenterX, 10,10,20,10));
 
@@ -39,24 +40,23 @@ public:
         TGTextView* description = new TGTextView(vframe, 400, 300);
         description -> AddLine("Welcome to alice masterclass interface.");
         description -> AddLine("");
-        description -> AddLine("This masterclass is meant to provide an example of all the");
-        description -> AddLine("steps of an anlysis in high energy physics.");
-        description -> AddLine("the main focus in this case is the study of the charmonia");
-        description -> AddLine("in Pb-Pb collisions. Your goal is to find the best analysis");
-        description -> AddLine("cuts to select the signal candidates and then extract the");
-        description -> AddLine("number of J/psi e Psi(2S).");
+        description -> AddLine("This masterclass provides an example of the");
+        description -> AddLine("steps of an analysis in high energy physics.");
+        description -> AddLine("Your goal is to study charmonia in Pb-Pb");
+        description -> AddLine("collisions, finding the best selections to");
+        description -> AddLine("extract the number of J/psi e Psi(2S).");
         description -> AddLine("");
         description -> AddLine("With this interface you can:");
-        description -> AddLine(" - inspect the different observables (mass, pT, eta, ecc..)");
-        description -> AddLine(" - study the analysis cuts that maximize the signal you are searching");
-        description -> AddLine(" - fit the data to extract the number of candidates");
+        description -> AddLine(" - inspect the observables (mass, pT, ecc..)");
+        description -> AddLine(" - apply analysis cuts");
+        description -> AddLine(" - fit data to extract the signal");
         description -> AddLine(" - Compare the results with other analyzers");
         description -> AddLine("");
         description -> AddLine("Enjoy!");
 
-        const TGFont* font = gClient->GetFont("-*-helvetica-r-*-*-16-*-*-*-*-*-*-*");
+        //const TGFont* font = gClient->GetFont("-*-helvetica-r-*-*-16-*-*-*-*-*-*-*");
+        TGFont *font = gClient->GetFont("helvetica", 16);
         description -> SetFont(font -> GetFontStruct());
-
         description -> SetReadOnly(kTRUE);
 
         description -> SetBackgroundColor(bkgColor);
