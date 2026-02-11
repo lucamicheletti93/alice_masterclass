@@ -38,10 +38,11 @@ private:
     TGComboBox  *comboVar;
     TGComboBox  *comboTrackCut;
     TGComboBox  *comboPlotHist;
+    TGComboBox  *comboPlotHistForFit;
 
     TGCheckButton *cbChargePlus, *cbChargeMinus, *cbChargeZero;
 
-    TGTextButton *bAddHist, *bPlotHist, *bDraw, *bClear;
+    TGTextButton *bAddHist, *bDrawHistPerVar, *bClear;
     TGTextButton *bBuildBkg;
     TGTextButton *bFitPlot, *bSubtractBkg, *bFit, *bResults;
     TGTextButton *bClose;
@@ -158,10 +159,10 @@ public:
         comboTrackCut -> AddEntry("MFT-MCH-MID", 2);
         comboTrackCut -> Select(2);
 
-        AddInput(showFrame, "Rebin", entryRebin, "1");
+        AddInput(showFrame, "Data rebin", entryRebin, "1");
 
         TGHorizontalFrame *fVar = new TGHorizontalFrame(showFrame);
-        fVar->AddFrame(new TGLabel(fVar, "Variabile:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
+        fVar->AddFrame(new TGLabel(fVar, "Variable:"), new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
 
         comboVar = new TGComboBox(fVar);
         comboVar->Resize(180, 22);
@@ -170,7 +171,7 @@ public:
 
         FillComboFromRDF();
 
-        TGTextButton *bShow = new TGTextButton(showFrame, "Show data");
+        TGTextButton *bShow = new TGTextButton(showFrame, "Plot selected variable");
         showFrame->AddFrame(bShow, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
 
 
@@ -188,7 +189,7 @@ public:
         entryHistName = new TGTextEntry(frameAddHist, new TGTextBuffer(30));
         entryHistName -> Resize(160, 22);
         entryHistName -> SetAlignment(kTextLeft);
-        entryHistName -> SetToolTipText("Hist. name");
+        entryHistName -> SetToolTipText("Nome dell'istogramma \nse non selezionato usa il nome della variabile");
         frameAddHist -> AddFrame(entryHistName, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 5, 5, 5));
 
         analysisFrame -> AddFrame(frameAddHist, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
@@ -201,25 +202,22 @@ public:
         // Frame for plotting histograms added to the list
         TGHorizontalFrame *framePlotHist = new TGHorizontalFrame(analysisFrame);
 
-        bPlotHist = new TGTextButton(framePlotHist, "Plot");
-        bPlotHist -> SetEnabled(false);
-        framePlotHist->AddFrame(bPlotHist, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 10, 5, 5));
+        bDrawHistPerVar = new TGTextButton(framePlotHist, "Plot");
+        bDrawHistPerVar -> SetEnabled(false);
+        framePlotHist->AddFrame(bDrawHistPerVar, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 10, 5, 5));
 
         comboPlotHist = new TGComboBox(framePlotHist);
         comboPlotHist->Resize(180, 22);
         framePlotHist->AddFrame(comboPlotHist, new TGLayoutHints(kLHintsExpandX));
-
         comboPlotHist -> RemoveAll();
-        comboPlotHist -> AddEntry("none", 1);
-        /*comboPlotHist -> AddEntry("MCH-MID", 0);
-        comboPlotHist -> AddEntry("MFT-MCH-MID", 2);
-        comboPlotHist -> Select(2);*/
 
         analysisFrame -> AddFrame(framePlotHist, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
-        bDraw = new TGTextButton(frameDrawHists, "Plot selected histograms");
-        bDraw -> SetEnabled(false);
-        frameDrawHists -> AddFrame(bDraw, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        bBuildBkg = new TGTextButton(frameDrawHists, "Build background");
+        bBuildBkg -> SetEnabled(false);
+        bBuildBkg -> SetToolTipText("Se disabilitato, per abilitare selezionare mass\ne 3 cariche per il dimuone = 0, +2, -2");
+        frameDrawHists -> AddFrame(bBuildBkg, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        removeBkg = false;
 
         bClear = new TGTextButton(frameDrawHists, "Clear all histograms");
         bClear -> SetEnabled(false);
@@ -227,26 +225,43 @@ public:
 
         analysisFrame -> AddFrame(frameDrawHists, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
-        bBuildBkg = new TGTextButton(analysisFrame, "Build background");
-        bBuildBkg -> SetEnabled(false);
-        bBuildBkg -> SetToolTipText("Se disabilitato, per abilitare selezionare mass\ne 3 cariche per il dimuone = 0, +2, -2");
-        analysisFrame -> AddFrame(bBuildBkg, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
-        removeBkg = false;
-
         // ---------- FIT (BOTTOM) ----------
         TGGroupFrame *fitFrame = new TGGroupFrame(left, "Fit data");
         left->AddFrame(fitFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 5, 5));
 
-        AddInput(fitFrame, "Histogram to fit", entryHistToFit, "none");
+        //AddInput(fitFrame, "Histogram to fit", entryHistToFit, "none");
 
-        labelHistFitStatus = new TGLabel(fitFrame, "No histogram selected");
-        fitFrame -> AddFrame(labelHistFitStatus, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
+        //labelHistFitStatus = new TGLabel(fitFrame, "No histogram selected");
+        //fitFrame -> AddFrame(labelHistFitStatus, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
+
+        // Frame for plotting histograms added to the list and ready for fitting
+        TGHorizontalFrame *frameHistToFit = new TGHorizontalFrame(fitFrame);
+
+        bFitPlot = new TGTextButton(frameHistToFit, "Plot");
+        bFitPlot -> SetEnabled(false);
+        frameHistToFit -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 10, 5, 5));
+
+        comboPlotHistForFit = new TGComboBox(frameHistToFit);
+        comboPlotHistForFit -> Resize(180, 22);
+        frameHistToFit -> AddFrame(comboPlotHistForFit, new TGLayoutHints(kLHintsExpandX));
+        comboPlotHistForFit -> RemoveAll();
+
+        fitFrame -> AddFrame(frameHistToFit, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
 
         TGHorizontalFrame *frameFitHists = new TGHorizontalFrame(fitFrame);
 
-        bFitPlot = new TGTextButton(frameFitHists, "Plot histogram to fit");
+        /*bDrawHistPerVar = new TGTextButton(fitFrame, "Plot");
+        bDrawHistPerVar -> SetEnabled(false);
+        frameFitHists->AddFrame(bDrawHistPerVar, new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 5, 10, 5, 5));
+
+        comboPlotHistForFit = new TGComboBox(frameFitHists);
+        comboPlotHistForFit->Resize(180, 22);
+        frameFitHists->AddFrame(comboPlotHistForFit, new TGLayoutHints(kLHintsExpandX));
+        comboPlotHistForFit -> RemoveAll();*/
+
+        /*bFitPlot = new TGTextButton(frameFitHists, "Plot histogram to fit");
         frameFitHists -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
-        bFitPlot -> SetEnabled(false);
+        bFitPlot -> SetEnabled(false);*/
 
         bSubtractBkg = new TGTextButton(frameFitHists, "Subtract background");
         bSubtractBkg -> SetToolTipText("Se disabilitato, e' necessario Build background");
@@ -429,7 +444,7 @@ public:
         bFitPlot -> Connect("Clicked()", "MyGUI", this, "FitDataFalse()");
         bFit -> Connect("Clicked()", "MyGUI", this, "FitDataTrue()");
         bResults -> Connect("Clicked()", "MyGUI", this, "UpdateResults()");
-        bDraw -> Connect("Clicked()", "MyGUI", this, "DrawHistograms()");
+        bDrawHistPerVar  -> Connect("Clicked()", "MyGUI", this, "DrawHistogramsPerVar()");
         bClear -> Connect("Clicked()", "MyGUI", this, "ClearHistogram()");
         bClose -> Connect("Clicked()", "MyGUI", this, "Close()");
 
@@ -582,7 +597,7 @@ public:
 
             // Adding histograms enalble the possibility to draw them,
             // before that the drawing is disables
-            bDraw -> SetEnabled(true);
+            bDrawHistPerVar -> SetEnabled(true);
             bClear -> SetEnabled(true);
 
             histograms[histName] = histVar;
@@ -594,6 +609,21 @@ public:
             }
             if (histDimuMassPM && histDimuMassPP && histDimuMassMM && histDimuMassPM -> GetEntries() > 0 && histDimuMassPP -> GetEntries() > 0 && histDimuMassMM -> GetEntries() > 0) {
                 bBuildBkg -> SetEnabled(true);
+            }
+        }
+
+        string xAxisName = histograms[histName] -> GetXaxis() -> GetTitle();
+        // Add the mass histograms to the list of histograms that can be fitted
+        if (xAxisName == "mass" && chargeDimu == 0) {
+            comboPlotHistForFit -> AddEntry(histName.c_str(), 1);
+            bFitPlot -> SetEnabled(true);
+        }
+
+        // Add the observable to the list if it does not exists
+        if (!(comboPlotHist -> FindEntry(xAxisName.c_str()))) {
+            comboPlotHist -> AddEntry(xAxisName.c_str(), histograms.size());
+            if (xAxisName == "mass") {
+                bFit -> SetEnabled(true);
             }
         }
     }
@@ -663,6 +693,41 @@ public:
         }
         canvasTopRight -> GetCanvas() -> Update();
     }
+    //--------------------------------------------//
+    // Function to Draw selected histograms per variable
+    void DrawHistogramsPerVar() {
+        TString chosenVar = GetSelectedVariable(comboPlotHist);
+
+        canvasTopRight -> GetCanvas() -> cd();
+        canvasTopRight -> GetCanvas() -> Clear();
+
+        // Check which histograms contains the chosen variable
+        bool first = true;
+        int colorCounter = 0;
+        gPad -> SetLogy(true);
+        for (auto &[name, hist] : histograms) {
+            string tmpHistName = hist -> GetXaxis() -> GetTitle();
+            if (tmpHistName == chosenVar) {
+                hist -> SetMarkerStyle(20);
+                hist -> SetMarkerColor(colorPalette[colorCounter]);
+                hist -> SetLineColor(colorPalette[colorCounter]);
+                hist -> Draw(first ? "HEP" : "HEP SAME");
+                first = false;
+                colorCounter++;
+            }
+        }
+        if (removeBkg && chosenVar == "mass") {
+            histDimuMassPPMM -> SetName("2 * #sqrt{PP * MM}");
+            histDimuMassPPMM -> SetMarkerColor(kMagenta);
+            histDimuMassPPMM -> SetLineColor(kMagenta);
+            histDimuMassPPMM -> SetLineWidth(2);
+            histDimuMassPPMM -> SetFillStyle(3001);
+            histDimuMassPPMM -> SetFillColorAlpha(kMagenta, 0.5);
+            histDimuMassPPMM -> Draw("H SAME");
+        }
+        gPad -> BuildLegend();
+        canvasTopRight -> GetCanvas() -> Update();
+    }
 
     //--------------------------------------------//
     // Function to build the combinatorial background
@@ -682,7 +747,7 @@ public:
 
         histDimuMassPPMM = new TH1D("histDimuMassPPMM", "", nBins, minBin, maxBin);
 
-        int PP, MM;
+        double PP, MM;
         for (int iBin = 0;iBin < nBins;iBin++) {
             PP = histDimuMassPP -> GetBinContent(iBin+1);
             MM = histDimuMassMM -> GetBinContent(iBin+1);
@@ -702,13 +767,13 @@ public:
 
         bSubtractBkg -> SetEnabled(true);
         removeBkg = true;
-        DrawHistograms();
+        DrawHistogramsPerVar();
     }
 
     //--------------------------------------------//
     // Function to fit the data
     void FitData(bool doFit = false) {
-        string nameHistToFit = entryHistToFit -> GetText();
+        string nameHistToFit = (GetSelectedVariable(comboPlotHistForFit)).Data();
         double fitMin = atof(entryFitMin -> GetText());
         double fitMax = atof(entryFitMax -> GetText());
         double fitMeanMin = atof(entryFitMeanMin -> GetText());
@@ -716,170 +781,159 @@ public:
         double fitWidthMin = atof(entryFitWidthMin -> GetText());
         double fitWidthMax = atof(entryFitWidthMax -> GetText());
 
-        if (nameHistToFit == "" || nameHistToFit == "none") {
-            labelHistFitStatus -> SetTextColor(kBlue);
-            labelHistFitStatus -> SetText("No histogram selected, select one!!!");
-            labelHistFitStatus -> MapWindow();
-            this -> Layout();
 
-        } else {
-            labelHistFitStatus -> SetTextColor(kBlue);
-            labelHistFitStatus -> SetText(Form("'%s' added!", nameHistToFit.c_str()));
-            labelHistFitStatus -> MapWindow();
-            this -> Layout();
+        canvasBottomLeft -> GetCanvas() -> cd();
+        canvasBottomLeft -> GetCanvas() -> Clear();
 
-            canvasBottomLeft -> GetCanvas() -> cd();
-            canvasBottomLeft -> GetCanvas() -> Clear();
+        //histDimuMassToFit = histograms[nameHistToFit].GetPtr();
+        histDimuMassToFit = (TH1D*) histograms[nameHistToFit].GetPtr() -> Clone("histDimuMassToFit");
 
-            histDimuMassToFit = histograms[nameHistToFit].GetPtr();
 
-            if (subtractBkg) {
-                histDimuMassToFit -> Add(histDimuMassPPMM, -1);
-                subtractBkg = false;
-            }
+        if (subtractBkg) {
+            histDimuMassToFit -> Add(histDimuMassPPMM, -1);
+            subtractBkg = false;
+        }
 
-            // Cosmetics for the dimuon mass histogram
-            histDimuMassToFit -> SetMarkerStyle(20);
-            histDimuMassToFit -> SetMarkerColor(kBlack);
-            histDimuMassToFit -> SetLineColor(kBlack);
+        // Cosmetics for the dimuon mass histogram
+        histDimuMassToFit -> SetMarkerStyle(20);
+        histDimuMassToFit -> SetMarkerColor(kBlack);
+        histDimuMassToFit -> SetLineColor(kBlack);
 
-            int nBins = histDimuMassToFit -> GetNbinsX();
-            int minXbin = histDimuMassToFit -> FindBin(2);
-            std::vector<double> binContents;
-            bool hasNegative = false;
-            for (int iBin = minXbin;iBin < nBins;iBin++) {
-                binContents.push_back(histDimuMassToFit -> GetBinContent(iBin));
-                if (histDimuMassToFit -> GetBinContent(iBin) < 0) {hasNegative = true;}
-            }
+        int nBins = histDimuMassToFit -> GetNbinsX();
+        int minXbin = histDimuMassToFit -> FindBin(2);
+        std::vector<double> binContents;
+        bool hasNegative = false;
+        for (int iBin = minXbin;iBin < nBins;iBin++) {
+            binContents.push_back(histDimuMassToFit -> GetBinContent(iBin));
+            if (histDimuMassToFit -> GetBinContent(iBin) < 0) {hasNegative = true;}
+        }
 
-            double tmpMinYval = 0;
-            for (double binContent : binContents) {
-                if (hasNegative) {
-                    if (binContent < 0) {
-                        if (TMath::Abs(binContent) > TMath::Abs(tmpMinYval)) {
+        double tmpMinYval = 0;
+        for (double binContent : binContents) {
+            if (hasNegative) {
+                if (binContent < 0) {
+                    if (TMath::Abs(binContent) > TMath::Abs(tmpMinYval)) {
                             tmpMinYval = binContent;
                             std::cout << tmpMinYval << std::endl;
-                        }
                     }
-                } else {
-                    tmpMinYval = 0;
                 }
-            }
-
-            double minYval = 1.5 * tmpMinYval;
-            double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> GetXaxis() -> FindBin(2)));
-
-            //histGridFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
-            //histGridFit -> Draw();
-
-            histDimuMassToFit -> SetMarkerColor(kBlack);
-            histDimuMassToFit -> SetLineColor(kBlack);
-            histDimuMassToFit -> GetXaxis() -> SetRangeUser(2, 5);
-            histDimuMassToFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
-            histDimuMassToFit -> Draw("EP");
-
-            if (doFit) {
-                TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
-                funcFit -> SetNpx(1000);
-                funcFit -> SetParameter(0, 50);
-                funcFit -> SetParLimits(1, fitMeanMin, fitMeanMax);
-                funcFit -> SetParLimits(2, fitWidthMin, fitWidthMax);
-                funcFit -> SetParameter(3, 20);
-                funcFit -> FixParameter(4, 3.675);
-                funcFit -> FixParameter(5, 0.099);
-                histDimuMassToFit -> Fit(funcFit, "R0Q");
-
-                TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
-                funcBkg -> SetNpx(1000);
-                funcBkg -> SetParameter(0, funcFit -> GetParameter(6));
-                funcBkg -> SetParameter(1, funcFit -> GetParameter(7));
-                funcBkg -> SetParameter(2, funcFit -> GetParameter(8));
-                funcBkg -> SetLineStyle(kDashed);
-                funcBkg -> SetLineColor(kGray+2);
-
-                TF1 *funcJpsi = new TF1("funcJpsi", "gaus", fitMin, fitMax);
-                funcJpsi -> SetNpx(1000);
-                funcJpsi -> SetParameter(0, funcFit -> GetParameter(0));
-                funcJpsi -> SetParameter(1, funcFit -> GetParameter(1));
-                funcJpsi -> SetParameter(2, funcFit -> GetParameter(2));
-                funcJpsi -> SetLineStyle(kSolid);
-                funcJpsi -> SetLineColor(kAzure+4);
-
-                TF1 *funcPsi2s = new TF1("funcPsi2s", "gaus", fitMin, fitMax);
-                funcPsi2s -> SetNpx(1000);
-                funcPsi2s -> SetParameter(0, funcFit -> GetParameter(3));
-                funcPsi2s -> SetParameter(1, funcFit -> GetParameter(4));
-                funcPsi2s -> SetParameter(2, funcFit -> GetParameter(5));
-                funcPsi2s -> SetLineStyle(kSolid);
-                funcPsi2s -> SetLineColor(kGreen+2);
-
-                funcBkg -> Draw("SAME");
-                funcJpsi -> Draw("SAME");
-                funcPsi2s -> Draw("SAME");
-                funcFit -> Draw("SAME");
-
-                TLegend *legendFit = new TLegend(0.65, 0.65, 0.80, 0.87);
-                legendFit -> SetBorderSize(0);
-                legendFit -> SetFillColor(10);
-                legendFit -> SetFillStyle(1);
-                legendFit -> SetLineStyle(0);
-                legendFit -> SetLineColor(0);
-                legendFit -> SetTextFont(42);
-                legendFit -> SetTextSize(0.045);
-                legendFit -> AddEntry(funcFit, "Fit", "L");
-                legendFit -> AddEntry(funcJpsi, "J/#psi", "L");
-                legendFit -> AddEntry(funcPsi2s, "#psi(2S)", "L");
-                legendFit -> AddEntry(funcBkg, "Bkg.", "L");
-                legendFit -> Draw();
-
-                double chiSquare = funcFit -> GetChisquare();
-                double ndf = funcFit -> GetNDF();
-
-                double meanJpsi = funcFit -> GetParameter(1);
-                double sigmaJpsi = funcFit -> GetParameter(2);
-                double intRangeJpsiMin = meanJpsi - (3*sigmaJpsi);
-                double intRangeJpsiMax = meanJpsi + (3*sigmaJpsi);
-
-                nJpsi = (funcJpsi -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histDimuMassToFit -> GetBinWidth(1));
-                errJpsi = TMath::Sqrt(nJpsi);
-
-                nBkgRangeJpsi = (funcBkg -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histDimuMassToFit -> GetBinWidth(1));
-                errBkgRangeJpsi = TMath::Sqrt(nBkgRangeJpsi);
-
-                signfJpsi = nJpsi / TMath::Sqrt(nJpsi + nBkgRangeJpsi);
-
-                double meanPsi2s = funcFit -> GetParameter(4);
-                double sigmaPsi2s = funcFit -> GetParameter(5);
-                double intRangePsi2sMin = meanPsi2s - (3*sigmaPsi2s);
-                double intRangePsi2sMax = meanPsi2s + (3*sigmaPsi2s);
-
-                nPsi2s = (funcPsi2s -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histDimuMassToFit -> GetBinWidth(1));
-                errPsi2s = TMath::Sqrt(nPsi2s);
-
-                nBkgRangePsi2s = (funcBkg -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histDimuMassToFit -> GetBinWidth(1));
-                errBkgRangePsi2s = TMath::Sqrt(nBkgRangePsi2s);
-
-                signfPsi2s = nPsi2s / TMath::Sqrt(nPsi2s + nBkgRangePsi2s);
-
-                TLatex latexTitle;
-                latexTitle.SetNDC();
-                latexTitle.SetTextSize(0.04);
-                latexTitle.SetTextFont(42);
-                //latexTitle.DrawLatex(0.55, 0.60, Form("N. J/#psi^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nJpsi, errJpsi));
-                //latexTitle.DrawLatex(0.55, 0.55, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nBkgRangeJpsi, errBkgRangeJpsi));
-                //latexTitle.DrawLatex(0.55, 0.50, Form("N. #psi(2S)^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nPsi2s, errPsi2s));
-                //latexTitle.DrawLatex(0.55, 0.45, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nBkgRangePsi2s, errBkgRangePsi2s));
-                latexTitle.DrawLatex(0.62, 0.60, Form("#chi^{2} = %3.2f", chiSquare / ndf));
-                latexTitle.DrawLatex(0.62, 0.55, Form("#it{N}_{J/#psi} = %1.0f #pm %1.0f", nJpsi, errJpsi));
-                latexTitle.DrawLatex(0.62, 0.50, Form("#it{N}_{Bkg J/#psi} = %1.0f #pm %1.0f", nBkgRangeJpsi, errBkgRangeJpsi));
-                latexTitle.DrawLatex(0.62, 0.45, Form("#it{N}_{#psi(2S)} = %1.0f #pm %1.0f", nPsi2s, errPsi2s));
-                latexTitle.DrawLatex(0.62, 0.40, Form("#it{N}_{Bkg #psi(2S)} = %1.0f #pm %1.0f", nBkgRangePsi2s, errBkgRangePsi2s));
-
-
-                bResults -> SetEnabled(true);
+            } else {
+                tmpMinYval = 0;
             }
         }
 
+        double minYval = 1.5 * tmpMinYval;
+        double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> GetXaxis() -> FindBin(2)));
+
+        //histGridFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
+        //histGridFit -> Draw();
+
+        histDimuMassToFit -> SetMarkerColor(kBlack);
+        histDimuMassToFit -> SetLineColor(kBlack);
+        histDimuMassToFit -> GetXaxis() -> SetRangeUser(2, 5);
+        histDimuMassToFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
+        histDimuMassToFit -> DrawClone("EP");
+
+        if (doFit) {
+            TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
+            funcFit -> SetNpx(1000);
+            funcFit -> SetParameter(0, 50);
+            funcFit -> SetParLimits(1, fitMeanMin, fitMeanMax);
+            funcFit -> SetParLimits(2, fitWidthMin, fitWidthMax);
+            funcFit -> SetParameter(3, 20);
+            funcFit -> FixParameter(4, 3.675);
+            funcFit -> FixParameter(5, 0.099);
+            histDimuMassToFit -> Fit(funcFit, "R0Q");
+
+            TF1 *funcBkg = new TF1("funcBkg", "pol2", fitMin, fitMax);
+            funcBkg -> SetNpx(1000);
+            funcBkg -> SetParameter(0, funcFit -> GetParameter(6));
+            funcBkg -> SetParameter(1, funcFit -> GetParameter(7));
+            funcBkg -> SetParameter(2, funcFit -> GetParameter(8));
+            funcBkg -> SetLineStyle(kDashed);
+            funcBkg -> SetLineColor(kGray+2);
+
+            TF1 *funcJpsi = new TF1("funcJpsi", "gaus", fitMin, fitMax);
+            funcJpsi -> SetNpx(1000);
+            funcJpsi -> SetParameter(0, funcFit -> GetParameter(0));
+            funcJpsi -> SetParameter(1, funcFit -> GetParameter(1));
+            funcJpsi -> SetParameter(2, funcFit -> GetParameter(2));
+            funcJpsi -> SetLineStyle(kSolid);
+            funcJpsi -> SetLineColor(kAzure+4);
+
+            TF1 *funcPsi2s = new TF1("funcPsi2s", "gaus", fitMin, fitMax);
+            funcPsi2s -> SetNpx(1000);
+            funcPsi2s -> SetParameter(0, funcFit -> GetParameter(3));
+            funcPsi2s -> SetParameter(1, funcFit -> GetParameter(4));
+            funcPsi2s -> SetParameter(2, funcFit -> GetParameter(5));
+            funcPsi2s -> SetLineStyle(kSolid);
+            funcPsi2s -> SetLineColor(kGreen+2);
+
+            funcBkg -> Draw("SAME");
+            funcJpsi -> Draw("SAME");
+            funcPsi2s -> Draw("SAME");
+            funcFit -> Draw("SAME");
+
+            TLegend *legendFit = new TLegend(0.65, 0.65, 0.80, 0.87);
+            legendFit -> SetBorderSize(0);
+            legendFit -> SetFillColor(10);
+            legendFit -> SetFillStyle(1);
+            legendFit -> SetLineStyle(0);
+            legendFit -> SetLineColor(0);
+            legendFit -> SetTextFont(42);
+            legendFit -> SetTextSize(0.045);
+            legendFit -> AddEntry(funcFit, "Fit", "L");
+            legendFit -> AddEntry(funcJpsi, "J/#psi", "L");
+            legendFit -> AddEntry(funcPsi2s, "#psi(2S)", "L");
+            legendFit -> AddEntry(funcBkg, "Bkg.", "L");
+            legendFit -> Draw();
+
+            double chiSquare = funcFit -> GetChisquare();
+            double ndf = funcFit -> GetNDF();
+
+            double meanJpsi = funcFit -> GetParameter(1);
+            double sigmaJpsi = funcFit -> GetParameter(2);
+            double intRangeJpsiMin = meanJpsi - (3*sigmaJpsi);
+            double intRangeJpsiMax = meanJpsi + (3*sigmaJpsi);
+
+            nJpsi = (funcJpsi -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histDimuMassToFit -> GetBinWidth(1));
+            errJpsi = TMath::Sqrt(nJpsi);
+
+            nBkgRangeJpsi = (funcBkg -> Integral(intRangeJpsiMin, intRangeJpsiMax)) / (histDimuMassToFit -> GetBinWidth(1));
+            errBkgRangeJpsi = TMath::Sqrt(nBkgRangeJpsi);
+
+            signfJpsi = nJpsi / TMath::Sqrt(nJpsi + nBkgRangeJpsi);
+
+            double meanPsi2s = funcFit -> GetParameter(4);
+            double sigmaPsi2s = funcFit -> GetParameter(5);
+            double intRangePsi2sMin = meanPsi2s - (3*sigmaPsi2s);
+            double intRangePsi2sMax = meanPsi2s + (3*sigmaPsi2s);
+
+            nPsi2s = (funcPsi2s -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histDimuMassToFit -> GetBinWidth(1));
+            errPsi2s = TMath::Sqrt(nPsi2s);
+
+            nBkgRangePsi2s = (funcBkg -> Integral(intRangePsi2sMin, intRangePsi2sMax)) / (histDimuMassToFit -> GetBinWidth(1));
+            errBkgRangePsi2s = TMath::Sqrt(nBkgRangePsi2s);
+
+            signfPsi2s = nPsi2s / TMath::Sqrt(nPsi2s + nBkgRangePsi2s);
+
+            TLatex latexTitle;
+            latexTitle.SetNDC();
+            latexTitle.SetTextSize(0.04);
+            latexTitle.SetTextFont(42);
+            //latexTitle.DrawLatex(0.55, 0.60, Form("N. J/#psi^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nJpsi, errJpsi));
+            //latexTitle.DrawLatex(0.55, 0.55, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangeJpsiMin, intRangeJpsiMax, nBkgRangeJpsi, errBkgRangeJpsi));
+            //latexTitle.DrawLatex(0.55, 0.50, Form("N. #psi(2S)^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nPsi2s, errPsi2s));
+            //latexTitle.DrawLatex(0.55, 0.45, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nBkgRangePsi2s, errBkgRangePsi2s));
+            latexTitle.DrawLatex(0.62, 0.60, Form("#chi^{2} = %3.2f", chiSquare / ndf));
+            latexTitle.DrawLatex(0.62, 0.55, Form("#it{N}_{J/#psi} = %1.0f #pm %1.0f", nJpsi, errJpsi));
+            latexTitle.DrawLatex(0.62, 0.50, Form("#it{N}_{Bkg J/#psi} = %1.0f #pm %1.0f", nBkgRangeJpsi, errBkgRangeJpsi));
+            latexTitle.DrawLatex(0.62, 0.45, Form("#it{N}_{#psi(2S)} = %1.0f #pm %1.0f", nPsi2s, errPsi2s));
+            latexTitle.DrawLatex(0.62, 0.40, Form("#it{N}_{Bkg #psi(2S)} = %1.0f #pm %1.0f", nBkgRangePsi2s, errBkgRangePsi2s));
+
+
+            bResults -> SetEnabled(true);
+        }
         canvasBottomLeft -> GetCanvas() -> Update();
     }
 
@@ -908,8 +962,7 @@ public:
         canvasBottomLeft -> GetCanvas() -> cd();
         canvasBottomLeft -> GetCanvas() -> Clear();
 
-        std::cout << nJpsi << " " << errJpsi << std::endl;
-        histResults -> GetYaxis() -> SetRangeUser(0.1, nJpsi * 5);
+        histResults -> GetYaxis() -> SetRangeUser(0.01, nJpsi * 5);
         histResults -> GetXaxis() -> SetLabelSize(0.07);
         histResults -> SetBinContent(1, nJpsi);
         histResults -> SetBinError(1, errJpsi);
@@ -929,7 +982,7 @@ public:
     //--------------------------------------------//
     // Function to clear the list of the histograms
     void ClearHistogram() {
-        bDraw -> SetEnabled(false);
+        bDrawHistPerVar -> SetEnabled(false);
         bClear -> SetEnabled(false);
         bSubtractBkg -> SetEnabled(false);
         bFit -> SetEnabled(false);
