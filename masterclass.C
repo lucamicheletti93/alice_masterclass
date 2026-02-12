@@ -58,7 +58,7 @@ private:
     std::vector<string> histogramNames;
 
     TH1D *histResults, *histDimuMassToFit, *histDimuMassPPMM;
-    //TH2D *histGridFit;
+    TH2D *histGridFit;
 
     double nJpsi, errJpsi, nPsi2s, errPsi2s, nBkgRangeJpsi, errBkgRangeJpsi, nBkgRangePsi2s, errBkgRangePsi2s, signfJpsi, signfPsi2s;
     bool removeBkg, subtractBkg;
@@ -617,12 +617,14 @@ public:
         if (xAxisName == "mass" && chargeDimu == 0) {
             comboPlotHistForFit -> AddEntry(histName.c_str(), 1);
             bFitPlot -> SetEnabled(true);
+            bFit -> SetEnabled(true);
         }
 
         // Add the observable to the list if it does not exists
         if (!(comboPlotHist -> FindEntry(xAxisName.c_str()))) {
             comboPlotHist -> AddEntry(xAxisName.c_str(), histograms.size());
             if (xAxisName == "mass") {
+                bFitPlot -> SetEnabled(true);
                 bFit -> SetEnabled(true);
             }
         }
@@ -703,7 +705,8 @@ public:
 
         // Check which histograms contains the chosen variable
         bool first = true;
-        int colorCounter = 0;
+        //int colorCounter = 0;
+        int colorCounter = histograms.size()-1;
         gPad -> SetLogy(true);
         for (auto &[name, hist] : histograms) {
             string tmpHistName = hist -> GetXaxis() -> GetTitle();
@@ -713,7 +716,7 @@ public:
                 hist -> SetLineColor(colorPalette[colorCounter]);
                 hist -> Draw(first ? "HEP" : "HEP SAME");
                 first = false;
-                colorCounter++;
+                colorCounter--;
             }
         }
         if (removeBkg && chosenVar == "mass") {
@@ -823,16 +826,19 @@ public:
         }
 
         double minYval = 1.5 * tmpMinYval;
-        double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> GetXaxis() -> FindBin(2)));
+        double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> GetXaxis() -> FindBin(3.1)));
 
-        //histGridFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
-        //histGridFit -> Draw();
+        histGridFit = new TH2D("histGridFit", "", 100, 2, 5, 100, minYval, maxYval);
+        histGridFit -> GetXaxis() -> SetTitle("mass (GeV/#it{c}^{2})");
+        histGridFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
+        histGridFit -> Draw();
 
+        gPad -> SetLogy(false);
         histDimuMassToFit -> SetMarkerColor(kBlack);
         histDimuMassToFit -> SetLineColor(kBlack);
         histDimuMassToFit -> GetXaxis() -> SetRangeUser(2, 5);
         histDimuMassToFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
-        histDimuMassToFit -> DrawClone("EP");
+        histDimuMassToFit -> DrawClone("EP SAME");
 
         if (doFit) {
             TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
@@ -994,6 +1000,7 @@ public:
 
         histograms.clear();
         histogramNames.clear();
+        comboPlotHistForFit -> RemoveAll();
         /*if (histDimuMassPM && histDimuMassPP && histDimuMassMM && histDimuMassPM -> GetEntries() > 0 && histDimuMassPP -> GetEntries() > 0 && histDimuMassMM -> GetEntries() > 0) {
             histDimuMassPM -> Reset();
             histDimuMassPP -> Reset();
