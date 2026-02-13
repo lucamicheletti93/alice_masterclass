@@ -44,7 +44,7 @@ private:
 
     TGTextButton *bAddHist, *bDrawHistPerVar, *bClear;
     TGTextButton *bBuildBkg;
-    TGTextButton *bFitPlot, *bSubtractBkg, *bFit, *bResults;
+    TGTextButton *bFitPlot, *bSubtractBkgOn, *bSubtractBkgOff, *bFit, *bResults;
     TGTextButton *bClose;
 
     //ROOT::RDF::RNode df;
@@ -58,7 +58,8 @@ private:
     std::vector<string> histogramNames;
 
     TH1D *histResults, *histDimuMassToFit, *histDimuMassPPMM;
-    TH2D *histGridFit;
+
+    TLatex latexResults;
 
     double nJpsi, errJpsi, nPsi2s, errPsi2s, nBkgRangeJpsi, errBkgRangeJpsi, nBkgRangePsi2s, errBkgRangePsi2s, signfJpsi, signfPsi2s;
     bool removeBkg, subtractBkg;
@@ -263,10 +264,16 @@ public:
         frameFitHists -> AddFrame(bFitPlot, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
         bFitPlot -> SetEnabled(false);*/
 
-        bSubtractBkg = new TGTextButton(frameFitHists, "Subtract background");
-        bSubtractBkg -> SetToolTipText("Se disabilitato, e' necessario Build background");
-        frameFitHists -> AddFrame(bSubtractBkg, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
-        bSubtractBkg -> SetEnabled(false);
+        bSubtractBkgOn = new TGTextButton(frameFitHists, "Bkg. subtraction on");
+        bSubtractBkgOn -> SetToolTipText("Se disabilitato, e' necessario Build background");
+        frameFitHists -> AddFrame(bSubtractBkgOn, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        bSubtractBkgOn -> SetEnabled(false);
+
+        bSubtractBkgOff = new TGTextButton(frameFitHists, "Bkg. subtraction off");
+        bSubtractBkgOff -> SetToolTipText("Se disabilitato, e' necessario Build background");
+        frameFitHists -> AddFrame(bSubtractBkgOff, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        bSubtractBkgOff -> SetEnabled(false);
+
         subtractBkg = false;
 
         fitFrame -> AddFrame(frameFitHists, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
@@ -330,17 +337,20 @@ public:
         TGHorizontalFrame *frameFitResults = new TGHorizontalFrame(fitFrame);
 
         bFit = new TGTextButton(frameFitResults, "Fit data");
-        frameFitResults -> AddFrame(bFit, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        frameFitResults -> AddFrame(bFit, new TGLayoutHints(kLHintsLeft, 10, 10, 5, 10));
         bFit -> SetEnabled(false);
 
         bResults = new TGTextButton(frameFitResults, "Add to results");
-        frameFitResults -> AddFrame(bResults, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        frameFitResults -> AddFrame(bResults, new TGLayoutHints(kLHintsLeft, 10, 10, 5, 10));
         bResults -> SetEnabled(false);
 
-        fitFrame -> AddFrame(frameFitResults, new TGLayoutHints(kLHintsLeft, 5, 5, 10, 5));
+        fitFrame -> AddFrame(frameFitResults, new TGLayoutHints(kLHintsCenterX, 5, 5, 10, 5));
 
         bClose = new TGTextButton(fitFrame, "Close");
         fitFrame -> AddFrame(bClose, new TGLayoutHints(kLHintsCenterX, 10, 10, 5, 10));
+        Pixel_t red;
+        gClient -> GetColorByName("red", red);
+        bClose -> SetTextColor(red);
         bClose -> SetEnabled(true);
 
         // =====================================================
@@ -431,6 +441,15 @@ public:
 
         histResults -> Draw("BAR");
 
+        latexResults.SetNDC();
+        latexResults.SetTextSize(0.04);
+        latexResults.SetTextFont(42);
+        latexResults.DrawLatex(0.65, 0.85, "#it{N}_{J/#psi} = 0");
+        latexResults.DrawLatex(0.65, 0.80, "#it{N}_{#psi(2S)} = 0");
+        latexResults.DrawLatex(0.65, 0.75, "#sigma_{J/#psi} = 0");
+        latexResults.DrawLatex(0.65, 0.70, "#sigma_{#psi(2S)} = 0");
+        latexResults.DrawLatex(0.65, 0.63, "#psi(2S) / J/#psi = 0");
+
         //TLine *line3sigma = new TLine(2, 3, 4, 3);
         //line3sigma -> SetLineColor(kRed+1);
         //line3sigma -> Draw("SAME");
@@ -440,7 +459,8 @@ public:
         bShow -> Connect("Clicked()", "MyGUI", this, "DrawDataset()");
         bAddHist -> Connect("Clicked()", "MyGUI", this, "AddHistogram()");
         bBuildBkg -> Connect("Clicked()", "MyGUI", this, "BuildBackground()");
-        bSubtractBkg -> Connect("Clicked()", "MyGUI", this, "EnableSubtractBkg()");
+        bSubtractBkgOn -> Connect("Clicked()", "MyGUI", this, "EnableSubtractBkg()");
+        bSubtractBkgOff -> Connect("Clicked()", "MyGUI", this, "DisableSubtractBkg()");
         bFitPlot -> Connect("Clicked()", "MyGUI", this, "FitDataFalse()");
         bFit -> Connect("Clicked()", "MyGUI", this, "FitDataTrue()");
         bResults -> Connect("Clicked()", "MyGUI", this, "UpdateResults()");
@@ -768,7 +788,7 @@ public:
         double rightSbPPMM = histDimuMassPPMM -> Integral(minBinRightSb, maxBinRightSb);
         histDimuMassPPMM -> Scale((leftSbPM + rightSbPM) / (leftSbPPMM + rightSbPPMM));
 
-        bSubtractBkg -> SetEnabled(true);
+        bSubtractBkgOn -> SetEnabled(true);
         removeBkg = true;
         DrawHistogramsPerVar();
     }
@@ -784,6 +804,9 @@ public:
         double fitWidthMin = atof(entryFitWidthMin -> GetText());
         double fitWidthMax = atof(entryFitWidthMax -> GetText());
 
+        if (nameHistToFit == "") {
+            return;
+        }
 
         canvasBottomLeft -> GetCanvas() -> cd();
         canvasBottomLeft -> GetCanvas() -> Clear();
@@ -794,7 +817,7 @@ public:
 
         if (subtractBkg) {
             histDimuMassToFit -> Add(histDimuMassPPMM, -1);
-            subtractBkg = false;
+            //subtractBkg = false;
         }
 
         // Cosmetics for the dimuon mass histogram
@@ -828,7 +851,7 @@ public:
         double minYval = 1.5 * tmpMinYval;
         double maxYval = 1.5 * (histDimuMassToFit -> GetBinContent(histDimuMassToFit -> GetXaxis() -> FindBin(3.1)));
 
-        histGridFit = new TH2D("histGridFit", "", 100, 2, 5, 100, minYval, maxYval);
+        TH2D *histGridFit = new TH2D("histGridFit", "", 100, 2, 5, 100, minYval, maxYval);
         histGridFit -> GetXaxis() -> SetTitle("mass (GeV/#it{c}^{2})");
         histGridFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
         histGridFit -> Draw();
@@ -838,7 +861,7 @@ public:
         histDimuMassToFit -> SetLineColor(kBlack);
         histDimuMassToFit -> GetXaxis() -> SetRangeUser(2, 5);
         histDimuMassToFit -> GetYaxis() -> SetRangeUser(minYval, maxYval);
-        histDimuMassToFit -> DrawClone("EP SAME");
+        histDimuMassToFit -> Draw("EP SAME");
 
         if (doFit) {
             TF1 *funcFit = new TF1("funcFit", "gaus(0)+gaus(3)+pol2(6)", fitMin, fitMax);
@@ -933,9 +956,11 @@ public:
             //latexTitle.DrawLatex(0.55, 0.45, Form("N. Bkg.^{%3.2f - %3.2f} = %1.0f #pm %1.0f", intRangePsi2sMin, intRangePsi2sMax, nBkgRangePsi2s, errBkgRangePsi2s));
             latexTitle.DrawLatex(0.62, 0.60, Form("#chi^{2} = %3.2f", chiSquare / ndf));
             latexTitle.DrawLatex(0.62, 0.55, Form("#it{N}_{J/#psi} = %1.0f #pm %1.0f", nJpsi, errJpsi));
-            latexTitle.DrawLatex(0.62, 0.50, Form("#it{N}_{Bkg J/#psi} = %1.0f #pm %1.0f", nBkgRangeJpsi, errBkgRangeJpsi));
-            latexTitle.DrawLatex(0.62, 0.45, Form("#it{N}_{#psi(2S)} = %1.0f #pm %1.0f", nPsi2s, errPsi2s));
-            latexTitle.DrawLatex(0.62, 0.40, Form("#it{N}_{Bkg #psi(2S)} = %1.0f #pm %1.0f", nBkgRangePsi2s, errBkgRangePsi2s));
+            latexTitle.DrawLatex(0.62, 0.50, Form("#it{N}_{#psi(2S)} = %1.0f #pm %1.0f", nPsi2s, errPsi2s));
+            if (!subtractBkg) { // do not show in case the backgorund is subtracted
+                latexTitle.DrawLatex(0.62, 0.45, Form("#it{N}_{Bkg J/#psi} = %1.0f #pm %1.0f", nBkgRangeJpsi, errBkgRangeJpsi));
+                latexTitle.DrawLatex(0.62, 0.40, Form("#it{N}_{Bkg #psi(2S)} = %1.0f #pm %1.0f", nBkgRangePsi2s, errBkgRangePsi2s));
+            }
 
 
             bResults -> SetEnabled(true);
@@ -946,7 +971,17 @@ public:
     //--------------------------------------------//
     // Function to enable the background subtraction
     void EnableSubtractBkg () {
+        bSubtractBkgOn -> SetEnabled(false);
+        bSubtractBkgOff -> SetEnabled(true);
         subtractBkg = true;
+    }
+
+    //--------------------------------------------//
+    // Function to disable the background subtraction
+    void DisableSubtractBkg () {
+        bSubtractBkgOn -> SetEnabled(true);
+        bSubtractBkgOff -> SetEnabled(false);
+        subtractBkg = false;
     }
 
     //--------------------------------------------//
@@ -965,10 +1000,10 @@ public:
     // Function to fit the data
     void UpdateResults() {
 
-        canvasBottomLeft -> GetCanvas() -> cd();
-        canvasBottomLeft -> GetCanvas() -> Clear();
+        canvasBottomRight -> GetCanvas() -> cd();
+        canvasBottomRight -> GetCanvas() -> Clear();
 
-        histResults -> GetYaxis() -> SetRangeUser(0.01, nJpsi * 5);
+        histResults -> GetYaxis() -> SetRangeUser(0.01, nJpsi * 10);
         histResults -> GetXaxis() -> SetLabelSize(0.07);
         histResults -> SetBinContent(1, nJpsi);
         histResults -> SetBinError(1, errJpsi);
@@ -982,7 +1017,15 @@ public:
         histResults -> SetBinError(5, 0);
         histResults -> Draw("BAR");
 
+        latexResults.DrawLatex(0.65, 0.85, Form("#it{N}_{J/#psi} = %3.0f", nJpsi));
+        latexResults.DrawLatex(0.65, 0.80, Form("#it{N}_{#psi(2S)} = %3.0f", nPsi2s));
+        latexResults.DrawLatex(0.65, 0.75, Form("#sigma_{J/#psi} = %3.2f", signfJpsi));
+        latexResults.DrawLatex(0.65, 0.70, Form("#sigma_{#psi(2S)} = %3.2f", signfPsi2s));
+        latexResults.DrawLatex(0.65, 0.63, Form("#psi(2S) / J/#psi = %3.2f", nPsi2s / nJpsi));
+    
+        canvasBottomRight -> GetCanvas() -> Modified();
         canvasBottomRight -> GetCanvas() -> Update();
+        gSystem -> ProcessEvents();
     }
 
     //--------------------------------------------//
@@ -990,7 +1033,8 @@ public:
     void ClearHistogram() {
         bDrawHistPerVar -> SetEnabled(false);
         bClear -> SetEnabled(false);
-        bSubtractBkg -> SetEnabled(false);
+        bSubtractBkgOn -> SetEnabled(false);
+        bSubtractBkgOff -> SetEnabled(false);
         bFit -> SetEnabled(false);
         bFitPlot -> SetEnabled(false);
         bResults -> SetEnabled(false);
