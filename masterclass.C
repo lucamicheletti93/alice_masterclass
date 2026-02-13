@@ -1044,16 +1044,8 @@ public:
 
         histograms.clear();
         histogramNames.clear();
+        comboPlotHist -> RemoveAll();
         comboPlotHistForFit -> RemoveAll();
-        /*if (histDimuMassPM && histDimuMassPP && histDimuMassMM && histDimuMassPM -> GetEntries() > 0 && histDimuMassPP -> GetEntries() > 0 && histDimuMassMM -> GetEntries() > 0) {
-            histDimuMassPM -> Reset();
-            histDimuMassPP -> Reset();
-            histDimuMassMM -> Reset();
-        }
-        if (histDimuMassToFit && histDimuMassPPMM && histDimuMassToFit -> GetEntries() > 0 && histDimuMassPPMM -> GetEntries() > 0) {
-            histDimuMassToFit -> Reset();
-            histDimuMassPPMM -> Reset();
-        }*/
         DrawHistograms();
     }
 
