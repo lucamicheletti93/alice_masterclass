@@ -688,9 +688,7 @@ public:
             gPad -> SetLogy(true);
             bool first = true;
             int colorCounter = histograms.size()-1;
-            std::cout << colorCounter << std::endl;
             for (auto &[name, hist] : histograms) {
-                std::cout << name << " ; " << colorCounter << std::endl;
                 if (hist -> GetXaxis() -> GetTitle() == chosenVar) {
                     hist -> SetMarkerStyle(20);
                     hist -> SetMarkerColor(colorPalette[colorCounter]);
@@ -764,9 +762,9 @@ public:
         double minBin = histDimuMassPM -> GetBinLowEdge(1);
         double maxBin = histDimuMassPM -> GetBinLowEdge(nBins) + histDimuMassPM -> GetBinWidth(nBins);
 
-        std::cout << histDimuMassPM -> GetNbinsX() << " [ " << histDimuMassPM -> GetBinCenter(1) << " , " << histDimuMassPM -> GetBinCenter(5) << " ]" << std::endl;
-        std::cout << histDimuMassPP -> GetNbinsX() << " [ " << histDimuMassPP -> GetBinCenter(1) << " , " << histDimuMassPP -> GetBinCenter(5) << " ]" << std::endl;
-        std::cout << histDimuMassMM -> GetNbinsX() << " [ " << histDimuMassMM -> GetBinCenter(1) << " , " << histDimuMassMM -> GetBinCenter(5) << " ]" << std::endl;
+        //std::cout << histDimuMassPM -> GetNbinsX() << " [ " << histDimuMassPM -> GetBinCenter(1) << " , " << histDimuMassPM -> GetBinCenter(5) << " ]" << std::endl;
+        //std::cout << histDimuMassPP -> GetNbinsX() << " [ " << histDimuMassPP -> GetBinCenter(1) << " , " << histDimuMassPP -> GetBinCenter(5) << " ]" << std::endl;
+        //std::cout << histDimuMassMM -> GetNbinsX() << " [ " << histDimuMassMM -> GetBinCenter(1) << " , " << histDimuMassMM -> GetBinCenter(5) << " ]" << std::endl;
 
         histDimuMassPPMM = new TH1D("histDimuMassPPMM", "", nBins, minBin, maxBin);
 
@@ -840,7 +838,6 @@ public:
                 if (binContent < 0) {
                     if (TMath::Abs(binContent) > TMath::Abs(tmpMinYval)) {
                             tmpMinYval = binContent;
-                            std::cout << tmpMinYval << std::endl;
                     }
                 }
             } else {

@@ -25,6 +25,9 @@ void rewriteTree() {
     TFile *fIn = TFile::Open("treePbPb.root", "READ");
     TTreeReader myReader("DF_2338498065827712/O2rtdilmtreerec", fIn);
 
+    //TFile *fIn = TFile::Open("treePbPb.root", "READ");
+    //TTreeReader myReader("DF_2338498065827712/O2rtdilmtreerec", fIn);
+
     TTreeReaderValue<UInt_t> fMcDecision(myReader, "fMcDecision");
     TTreeReaderValue<Float_t> fMass(myReader, "fMass");
     TTreeReaderValue<Float_t> fPt(myReader, "fPt");
@@ -83,7 +86,7 @@ void rewriteTree() {
             }
         } else if (*fMcDecision == 5) {
             double num = gRandom -> Rndm();
-            if (num <= 0.1) {
+            if (num <= 0.2) {
                 treeOut -> Fill();
             }
         } else {
