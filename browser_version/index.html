@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALICE masterclass – J/ψ</title>
+<style>
+:root{--bg:#eef1f4;--ink:#14212b;--mut:#5b6b78;--line:#cdd5dc;--acc:#1f5fa8;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--ink);display:grid;grid-template-columns:310px 1fr;min-height:100vh}
+aside{padding:10px;overflow:auto;background:var(--card);border-right:1px solid var(--line);max-height:100vh}
+fieldset{border:1px solid var(--line);border-radius:6px;margin:0 0 10px;padding:6px 8px}
+legend{font-weight:600;padding:0 4px}
+label{display:grid;grid-template-columns:92px 1fr 1fr;gap:4px;align-items:center;margin:3px 0}
+label>:nth-child(2):last-child{grid-column:2/4}
+input,select{font:inherit;padding:3px 5px;min-width:0;width:100%}
+button{font:inherit;cursor:pointer;background:var(--acc);color:#fff;border:0;border-radius:4px;padding:5px 9px;margin:3px 3px 0 0}
+button:disabled{background:#aab5bf;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #e07b00;outline-offset:1px}
+#msg{color:var(--mut);min-height:1.4em;margin:2px 0}
+main{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;padding:8px;height:100vh}
+section{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px;min-height:0;display:flex;flex-direction:column}
+h2{font-size:14px;margin:2px 6px}
+canvas{flex:1;min-height:0;width:100%}
+@media(max-width:900px){body,main{grid-template-columns:1fr;height:auto}aside{max-height:none}section{height:340px}}
+</style></head><body>
+<aside>
+<fieldset><legend>Selezione dati</legend>
+<label>pT μ<input id="pm0" value="0"><input id="pm1" value="100"></label>
+<label>η μ<input id="em0" value="2.5"><input id="em1" value="4"></label>
+<label>pT dimuone<input id="pd0" value="0"><input id="pd1" value="100"></label>
+<label>Carica dimuone<select id="ch"><option value="0">0 (+−)</option><option value="2">+2 (++)</option><option value="-2">−2 (−−)</option></select></label>
+<label>Tipo traccia<select id="ty"><option value="0">MFT-MCH-MID</option><option value="3">MCH-MID</option><option value="4">MCH</option></select></label>
+<label>Rebin<input id="rb" value="1"></label>
+<label>Variabile<select id="var"></select></label>
+<button id="bPlot">Disegna variabile</button>
+</fieldset>
+<fieldset><legend>Analisi</legend>
+<label>Nome<input id="nm" placeholder="come la variabile"></label>
+<button id="bAdd" disabled>Aggiungi</button><div id="msg"></div>
+<label>Variabile<select id="pv"></select></label>
+<button id="bPv" disabled>Disegna</button><button id="bBkg" disabled>Costruisci fondo</button><button id="bClr" disabled>Cancella tutto</button>
+</fieldset>
+<fieldset><legend>Fit</legend>
+<label>Istogramma<select id="fh"></select></label>
+<label>Sottrai fondo<input id="sub" type="checkbox" disabled style="width:auto"></label>
+<label>Range fit<input id="f0" value="2"><input id="f1" value="5"></label>
+<label>Media segnale<input id="m0" value="2.95"><input id="m1" value="3.3"></label>
+<label>Larghezza<input id="w0" value="0"><input id="w1" value="0.1"></label>
+<button id="bFp" disabled>Disegna</button><button id="bFit" disabled>Fit</button><button id="bRes" disabled>Aggiungi ai risultati</button>
+</fieldset>
+</aside>
+<main>
+<section><h2>Selezione dati</h2><canvas id="c1"></canvas></section>
+<section><h2>Analisi</h2><canvas id="c2"></canvas></section>
+<section><h2>Fit</h2><canvas id="c3"></canvas></section>
+<section><h2>Risultati</h2><canvas id="c4"></canvas></section>
+</main>
+<script>
+const $=i=>document.getElementById(i), V=n=>+$(n).value;
+const VARS=['mass','pt','eta','ptMu1','ptMu2','etaMu1','etaMu2'], COL=['#14212b','#c0392b','#1f77b4','#2e9e4f','#e07b00','#7b4fb5'];
+let M,D={},cur=null,H={},bkg=null,fitOut=null,lastFit=null,res=null;
+VARS.forEach(v=>$('var').add(new Option(v,v))); $('var').value='mass';
+const msg=t=>$('msg').textContent=t;
+
+async function load(){
+  M=await(await fetch('meta.json')).json();
+  const b=await(await fetch('data.bin')).arrayBuffer(),n=M.n;
+  VARS.forEach((v,i)=>D[v]=new Uint16Array(b,i*n*2,n));
+  D.charge=new Int8Array(b,14*n,n); D.type=new Int8Array(b,15*n,n);
+  draw(); drawRes();
+}
+
+// ---- istogramma dalla selezione (equivalente di Filter(cut).Histo1D) ----
+function makeHist(v){
+  const n=M.n,Q=(k,a,b)=>{const[l,h]=M.r[k],s=65535/(h-l);return[(a-l)*s,(b-l)*s]};
+  const [pa,pb]=Q('pt',V('pd0'),V('pd1')),[ma,mb]=Q('ptMu1',V('pm0'),V('pm1')),[na,nb_]=Q('ptMu2',V('pm0'),V('pm1'));
+  const [e1a,e1b]=Q('etaMu1',V('em0'),V('em1')),[e2a,e2b]=Q('etaMu2',V('em0'),V('em1'));
+  const ch=V('ch'),ty=V('ty'),P=D.pt,P1=D.ptMu1,P2=D.ptMu2,E1=D.etaMu1,E2=D.etaMu2;
+  const nb=v==='mass'?600:100,[lo,hi]=v==='mass'?[0,6]:M.r[v],[vl,vh]=M.r[v],k=(vh-vl)/65535,w=nb/(hi-lo),X=D[v],c=new Float64Array(nb);
+  for(let i=0;i<n;i++){
+    if(D.charge[i]!==ch||D.type[i]!==ty)continue;
+    let q=P[i];if(q<=pa||q>=pb)continue;
+    q=P1[i];if(q<=ma||q>=mb)continue; q=P2[i];if(q<=na||q>=nb_)continue;
+    q=E1[i];if(q<=e1a||q>=e1b)continue; q=E2[i];if(q<=e2a||q>=e2b)continue;
+    const j=Math.floor((vl+X[i]*k-lo)*w); if(j>=0&&j<nb)c[j]++;
+  }
+  return rebin({c,e:c.map(Math.sqrt),lo,hi,v,ch},Math.max(1,Math.round(V('rb'))));
+}
+function rebin(h,r){
+  if(r<2)return h; const n=Math.floor(h.c.length/r),c=new Float64Array(n),e=new Float64Array(n);
+  for(let i=0;i<n;i++){let s=0,q=0;for(let j=0;j<r;j++){s+=h.c[i*r+j];q+=h.e[i*r+j]**2}c[i]=s;e[i]=Math.sqrt(q)}
+  return {...h,c,e,hi:h.lo+n*r*(h.hi-h.lo)/h.c.length};
+}
+const bw=h=>(h.hi-h.lo)/h.c.length, bin=(h,x)=>Math.floor((x-h.lo)/bw(h));
+const integ=(h,a,b)=>{let s=0;for(let i=bin(h,a);i<=bin(h,b);i++)s+=h.c[i];return s};
+
+// ---- disegno ----
+function plot(cv,items,o={}){
+  const d=devicePixelRatio||1,r=cv.getBoundingClientRect();cv.width=r.width*d;cv.height=r.height*d;
+  const g=cv.getContext('2d');g.scale(d,d);const W=r.width,Ht=r.height,L=58,R=12,T=12,B=34;
+  const hs=items.filter(i=>i.h);
+  const x0=o.x0??Math.min(...hs.map(i=>i.h.lo)),x1=o.x1??Math.max(...hs.map(i=>i.h.hi));
+  let ys=[];hs.forEach(({h})=>h.c.forEach((y,i)=>{const x=h.lo+(i+.5)*bw(h);if(x>=x0&&x<=x1)ys.push(y)}));
+  let y0=o.y0,y1=o.y1;
+  if(o.log){const p=ys.filter(y=>y>0);y0??=Math.min(...p,1)/2;y1??=Math.max(...p,1)*3}
+  else{y0??=Math.min(0,...ys)*1.2;y1??=Math.max(...ys,1)*1.15}
+  const sx=x=>L+(x-x0)/(x1-x0)*(W-L-R),sy=y=>o.log?Ht-B-(Math.log10(Math.max(y,y0))-Math.log10(y0))/(Math.log10(y1)-Math.log10(y0))*(Ht-B-T):Ht-B-(y-y0)/(y1-y0)*(Ht-B-T);
+  g.font='11px system-ui';g.fillStyle=g.strokeStyle='#5b6b78';g.lineWidth=1;
+  g.strokeRect(L,T,W-L-R,Ht-B-T);
+  for(let k=0;k<=5;k++){const x=x0+(x1-x0)*k/5;g.textAlign='center';g.fillText(+x.toPrecision(3),sx(x),Ht-B+14)
+    if(!o.log){const y=y0+(y1-y0)*k/5;g.textAlign='right';g.fillText(+y.toPrecision(3),L-4,sy(y)+3)}}
+  if(o.log)for(let e=Math.ceil(Math.log10(y0));e<=Math.log10(y1);e++){g.textAlign='right';g.fillText('1e'+e,L-4,sy(10**e)+3);g.globalAlpha=.2;g.beginPath();g.moveTo(L,sy(10**e));g.lineTo(W-R,sy(10**e));g.stroke();g.globalAlpha=1}
+  g.textAlign='center';g.fillText(o.xl||'',(L+W-R)/2,Ht-4);
+  g.save();g.beginPath();g.rect(L,T,W-L-R,Ht-B-T);g.clip();
+  items.forEach(it=>{g.strokeStyle=g.fillStyle=it.color||'#000';
+    if(it.h){const h=it.h;h.c.forEach((y,i)=>{const x=sx(h.lo+(i+.5)*bw(h));if(x<L||x>W)return;
+      if(it.fill){g.globalAlpha=.4;g.fillRect(sx(h.lo+i*bw(h)),sy(y),sx(h.lo+(i+1)*bw(h))-sx(h.lo+i*bw(h)),sy(0>y0?0:y0)-sy(y));g.globalAlpha=1;return}
+      g.beginPath();g.arc(x,sy(y),2,0,7);g.fill();g.beginPath();g.moveTo(x,sy(Math.max(y-h.e[i],y0)));g.lineTo(x,sy(y+h.e[i]));g.stroke()})}
+    else{g.lineWidth=it.w||1.5;g.setLineDash(it.dash||[]);g.beginPath();for(let k=0;k<=400;k++){const x=it.a+(it.b-it.a)*k/400;k?g.lineTo(sx(x),sy(it.f(x))):g.moveTo(sx(x),sy(it.f(x)))}g.stroke();g.setLineDash([]);g.lineWidth=1}});
+  g.restore();
+  items.filter(i=>i.name).forEach((it,k)=>{g.fillStyle=it.color;g.textAlign='right';g.fillText('● '+it.name,W-R-6,T+14+k*14)});
+  if(o.text)o.text.forEach((t,k)=>{g.fillStyle='#14212b';g.textAlign='right';g.fillText(t,W-R-6,T+18+(items.filter(i=>i.name).length+k)*14)});
+}
+function draw(){ if(cur)plot($('c1'),[{h:cur,color:'#14212b'}],{log:true,xl:cur.v}) }
+function drawAnalysis(){
+  const v=$('pv').value,items=[];let k=0;
+  Object.entries(H).filter(([,x])=>x.h.v===v).forEach(([n,x])=>items.push({h:x.h,color:COL[k++%6],name:n}));
+  if(bkg&&v==='mass')items.push({h:bkg,color:'#c02fc0',fill:true,name:'2√(PP·MM)'});
+  if(items.length)plot($('c2'),items,{log:true,xl:v});
+}
+
+// ---- fit chi2 con limiti (Levenberg-Marquardt) ----
+function solve(A,b){const n=b.length;for(let i=0;i<n;i++){let m=i;for(let r=i+1;r<n;r++)if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;[A[i],A[m]]=[A[m],A[i]];[b[i],b[m]]=[b[m],b[i]];
+  for(let r=i+1;r<n;r++){const f=A[r][i]/(A[i][i]||1e-30);for(let c=i;c<n;c++)A[r][c]-=f*A[i][c];b[r]-=f*b[i]}}
+  const x=Array(n).fill(0);for(let i=n-1;i>=0;i--){let s=b[i];for(let c=i+1;c<n;c++)s-=A[i][c]*x[c];x[i]=s/(A[i][i]||1e-30)}return x}
+function lm(f,p,xs,ys,es,lo,hi){
+  const cl=q=>q.map((v,i)=>Math.min(hi[i],Math.max(lo[i],v))),chi=q=>xs.reduce((s,x,i)=>s+((ys[i]-f(q,x))/es[i])**2,0);
+  p=cl(p);let c=chi(p),lam=1e-2;
+  for(let it=0;it<300;it++){
+    const n=p.length,J=xs.map(x=>p.map((_,k)=>{const d=1e-6*(Math.abs(p[k])+1e-3),q=p.slice();q[k]+=d;return(f(q,x)-f(p,x))/d}));
+    const A=p.map((_,a)=>p.map((_,b)=>xs.reduce((s,_,i)=>s+J[i][a]*J[i][b]/es[i]**2,0))),g=p.map((_,a)=>xs.reduce((s,x,i)=>s+J[i][a]*(ys[i]-f(p,x))/es[i]**2,0));
+    const A2=A.map((r,i)=>r.map((v,j)=>i===j?v*(1+lam)+1e-12:v)),dp=solve(A2,g.slice()),q=cl(p.map((v,i)=>v+dp[i])),cn=chi(q);
+    if(cn<c){const done=c-cn<1e-9*c;p=q;c=cn;lam=Math.max(lam/3,1e-9);if(done)break}else lam*=4;
+  }
+  return{p,chi2:c}
+}
+const gaus=(A,m,s,x)=>A*Math.exp(-.5*((x-m)/s)**2),nint=(f,a,b)=>{let s=0,N=2000;for(let i=0;i<N;i++)s+=f(a+(i+.5)*(b-a)/N);return s*(b-a)/N};
+function fitCurrent(doFit){
+  const nm=$('fh').value;if(!nm)return;let h={...H[nm].h,c:Float64Array.from(H[nm].h.c),e:Float64Array.from(H[nm].h.e)};
+  if($('sub').checked&&bkg&&bkg.c.length===h.c.length)h.c=h.c.map((y,i)=>y-bkg.c[i]),h.e=h.e.map((e,i)=>Math.hypot(e,bkg.e[i]));
+  const a=V('f0'),b=V('f1'),mlo=V('m0'),mhi=V('m1'),wlo=Math.max(V('w0'),1e-3),whi=V('w1');
+  const items=[{h,color:'#14212b'}],ys=[];h.c.forEach((y,i)=>{const x=h.lo+(i+.5)*bw(h);if(x>=2&&x<=5)ys.push(y)});
+  const opt={x0:2,x1:5,xl:'mass (GeV/c²)',y0:Math.min(0,...ys)*1.5,y1:1.5*h.c[bin(h,3.1)]};
+  const text=[];
+  if(doFit){
+    const xs=[],yv=[],ev=[];h.c.forEach((y,i)=>{const x=h.lo+(i+.5)*bw(h);if(x>=a&&x<=b&&y!==0){xs.push(x);yv.push(y);ev.push(h.e[i]||1)}});
+    const f=(p,x)=>gaus(p[0],p[1],p[2],x)+gaus(p[3],3.675,.099,x)+p[4]+p[5]*(x-3)+p[6]*(x-3)**2;
+    const A0=Math.max(...yv.filter((_,i)=>xs[i]>mlo&&xs[i]<mhi),1);
+    const r=lm(f,[A0,(mlo+mhi)/2,Math.min(Math.max(.07,wlo),whi),A0*.1,yv[0]||0,0,0],xs,yv,ev,[-1e12,mlo,wlo,-1e12,-1e12,-1e12,-1e12],[1e12,mhi,whi,1e12,1e12,1e12,1e12]),p=r.p;
+    const F=x=>f(p,x),Bk=x=>p[4]+p[5]*(x-3)+p[6]*(x-3)**2,J=x=>gaus(p[0],p[1],p[2],x),P=x=>gaus(p[3],3.675,.099,x),w=bw(h);
+    const nJ=nint(J,p[1]-3*p[2],p[1]+3*p[2])/w,bJ=nint(Bk,p[1]-3*p[2],p[1]+3*p[2])/w,nP=nint(P,3.675-.297,3.675+.297)/w,bP=nint(Bk,3.675-.297,3.675+.297)/w;
+    lastFit={nJ,nP,sJ:nJ/Math.sqrt(nJ+bJ),sP:nP/Math.sqrt(nP+bP)};
+    items.push({a,b,f:Bk,color:'#666',dash:[5,4],name:'Fondo'},{a,b,f:J,color:'#1b4f8a',name:'J/ψ'},{a,b,f:P,color:'#2e9e4f',name:'ψ(2S)'},{a,b,f:F,color:'#c0392b',w:2,name:'Fit'});
+    text.push(`χ²/ndf = ${(r.chi2/(xs.length-5)).toFixed(2)}`,`N J/ψ = ${nJ.toFixed(0)} ± ${Math.sqrt(nJ).toFixed(0)}`,`N ψ(2S) = ${nP.toFixed(0)} ± ${Math.sqrt(nP).toFixed(0)}`);
+    $('bRes').disabled=false;
+  }
+  opt.text=text;plot($('c3'),items,opt);
+}
+function drawRes(){
+  const cv=$('c4'),d=devicePixelRatio||1,r=cv.getBoundingClientRect();cv.width=r.width*d;cv.height=r.height*d;
+  const g=cv.getContext('2d');g.scale(d,d);const W=r.width,Ht=r.height,L=20,B=34,T=14,lab=['N J/ψ','N ψ(2S)','σ J/ψ','σ ψ(2S)','ψ(2S)/J/ψ'];
+  const top=res?Math.max(res.nJ*10,10):1000,lg=y=>(Math.log10(Math.max(y,.01))+2)/(Math.log10(top)+2);
+  g.font='12px system-ui';g.textAlign='center';g.strokeStyle='#cdd5dc';g.strokeRect(L,T,W-2*L,Ht-B-T);
+  const v=res?[res.nJ,res.nP,res.sJ,res.sP,res.nP/res.nJ]:[0,0,0,0,0],bwid=(W-2*L)/5;
+  v.forEach((y,i)=>{const h=lg(y)*(Ht-B-T);g.fillStyle='#1f5fa8';g.globalAlpha=.7;g.fillRect(L+i*bwid+bwid*.2,Ht-B-h,bwid*.6,h);g.globalAlpha=1;
+    g.fillStyle='#14212b';g.fillText(lab[i],L+(i+.5)*bwid,Ht-B+16);g.fillText(y?(y>10?y.toFixed(0):y.toFixed(2)):'0',L+(i+.5)*bwid,Ht-B-h-4)});
+}
+
+// ---- eventi ----
+const refresh=()=>{
+  const vs=[...new Set(Object.values(H).map(x=>x.h.v))],old=$('pv').value;$('pv').innerHTML='';vs.forEach(v=>$('pv').add(new Option(v,v)));if(vs.includes(old))$('pv').value=old;
+  $('fh').innerHTML='';Object.entries(H).filter(([,x])=>x.h.v==='mass'&&x.h.ch===0).forEach(([n])=>$('fh').add(new Option(n,n)));
+  const has=Object.keys(H).length>0,mass=[0,2,-2].every(c=>Object.values(H).some(x=>x.h.v==='mass'&&x.h.ch===c)),fit=$('fh').options.length>0;
+  $('bPv').disabled=$('bClr').disabled=!has;$('bBkg').disabled=!mass;$('bFp').disabled=$('bFit').disabled=!fit;$('sub').disabled=!bkg;
+};
+$('bPlot').onclick=()=>{cur=makeHist($('var').value);$('bAdd').disabled=false;draw()};
+$('bAdd').onclick=()=>{
+  const n=$('nm').value.trim()||cur.v;
+  if(H[n]){msg(`'${n}' esiste già: scegli un altro nome`);return}
+  H[n]={h:cur};msg(`Istogramma '${n}' aggiunto`);refresh();$('pv').value=cur.v;drawAnalysis();
+};
+$('bPv').onclick=drawAnalysis;
+$('bBkg').onclick=()=>{
+  const g=c=>Object.values(H).find(x=>x.h.v==='mass'&&x.h.ch===c).h,PM=g(0),PP=g(2),MM=g(-2),n=PM.c.length,c=new Float64Array(n);
+  for(let i=0;i<n;i++)c[i]=2*Math.sqrt(PP.c[i]*MM.c[i]);
+  const raw={...PM,c,e:c.map(Math.sqrt)},s=(integ(PM,1,2)+integ(PM,4,5))/(integ(raw,1,2)+integ(raw,4,5));
+  bkg={...raw,c:c.map(y=>y*s),e:raw.e.map(y=>y*s)};refresh();drawAnalysis();
+};
+$('bClr').onclick=()=>{H={};bkg=null;msg('');refresh();$('c2').getContext('2d').clearRect(0,0,9999,9999)};
+$('bFp').onclick=()=>fitCurrent(false);$('bFit').onclick=()=>fitCurrent(true);
+$('bRes').onclick=()=>{res=lastFit;drawRes()};
+addEventListener('resize',()=>{draw();drawRes()});
+load().catch(e=>msg('Errore nel caricamento: servono data.bin e meta.json (python3 convert.py) e un server http'));
+</script></body></html>
